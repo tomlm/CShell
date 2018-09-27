@@ -22,17 +22,6 @@ namespace CShellLibTests
             subFolder2 = Path.Combine(subFolder, "subfolder2");
         }
 
-        [TestMethod]
-        public void CShellEnvironment()
-        {
-            Environment.CurrentDirectory = testFolder;
-
-            CShell shell = new CShell();
-            Assert.AreEqual(Environment.GetEnvironmentVariable("path"), shell.Environment["Path"], "environment missing");
-            Assert.AreEqual(testFolder, shell.CurrentFolder, "currentFolder should be set");
-            Assert.AreEqual(testFolder, shell.FolderHistory.First(), "history should be set");
-            Assert.AreEqual(1, shell.FolderHistory.Count(), "history should be one");
-        }
 
         [TestMethod]
         public void CShellFolderChangingTracked()
@@ -40,7 +29,7 @@ namespace CShellLibTests
             Environment.CurrentDirectory = testFolder;
 
             CShell shell = new CShell();
-            shell.CurrentFolder = subFolder;
+            shell.ChangeFolder(subFolder);
             Assert.AreEqual(subFolder, Environment.CurrentDirectory, "environment path not changed");
             Assert.AreEqual(subFolder, shell.CurrentFolder, "currentFolder not changed");
             Assert.AreEqual(subFolder, shell.FolderHistory[1], "history should be updated");
@@ -135,75 +124,10 @@ namespace CShellLibTests
             shell.CreateFolder("xyz");
             Assert.IsTrue(Directory.EnumerateDirectories(testFolder).Where(path => Path.GetFileName(path) == "xyz").Any(), "xyz not created");
 
-            shell.CurrentFolder = testFolder;
+            shell.ChangeFolder(testFolder);
             shell.DeleteFolder("xyz", true);
             Assert.IsFalse(Directory.EnumerateDirectories(testFolder).Where(path => Path.GetFileName(path) == "xyz").Any(), "xyz not created");
         }
-
-        [TestMethod]
-        public void TestList()
-        {
-            Environment.CurrentDirectory = testFolder;
-            var shell = new CShell();
-
-            Assert.IsTrue(shell.List().Where(path => Path.GetFileName(path) == "TestA.txt").Any(), "missing TestA");
-            Assert.IsTrue(shell.List().Where(path => Path.GetFileName(path) == "TestB.txt").Any(), "missing TestB");
-            Assert.IsTrue(shell.List().Where(path => Path.GetFileName(path) == "subfolder").Any(), "missing subfolder");
-            Assert.AreEqual(3, shell.List().Count(), "shallow count is wrong");
-
-            Assert.IsTrue(shell.List(recursive:true).Where(path => Path.GetFileName(path) == "TestA.txt").Any(), "missing TestA");
-            Assert.IsTrue(shell.List(recursive: true).Where(path => Path.GetFileName(path) == "TestB.txt").Any(), "missing TestB");
-            Assert.IsTrue(shell.List(recursive: true).Where(path => Path.GetFileName(path) == "TestC.txt").Any(), "missing TestC");
-            Assert.IsTrue(shell.List(recursive: true).Where(path => Path.GetFileName(path) == "TestD.txt").Any(), "missing TestD");
-            Assert.IsTrue(shell.List(recursive: true).Where(path => Path.GetFileName(path) == "TestE.txt").Any(), "missing TestE");
-            Assert.IsTrue(shell.List(recursive: true).Where(path => Path.GetFileName(path) == "TestF.txt").Any(), "missing TestF");
-            Assert.IsTrue(shell.List(recursive: true).Where(path => Path.GetFileName(path) == "subfolder").Any(), "missing subfolder");
-            Assert.IsTrue(shell.List(recursive: true).Where(path => Path.GetFileName(path) == "subfolder2").Any(), "missing subfolder2");
-            Assert.AreEqual(8, shell.List(recursive: true).Count(), "shallow count is wrong");
-
-            Assert.IsTrue(shell.List("TestF*", recursive: true).Where(path => Path.GetFileName(path) == "TestF.txt").Any(), "missing TestF pattern");
-            Assert.AreEqual(1, shell.List("TestF*", recursive: true).Count(), "count wrong TestF pattern");
-        }
-
-        [TestMethod]
-        public void TestListFiles()
-        {
-            Environment.CurrentDirectory = testFolder;
-            var shell = new CShell();
-
-            Assert.IsTrue(shell.ListFiles().Where(path => Path.GetFileName(path) == "TestA.txt").Any(), "missing TestA");
-            Assert.IsTrue(shell.ListFiles().Where(path => Path.GetFileName(path) == "TestB.txt").Any(), "missing TestB");
-            Assert.AreEqual(2, shell.ListFiles().Count(), "shallow count is wrong");
-
-            Assert.IsTrue(shell.ListFiles(recursive: true).Where(path => Path.GetFileName(path) == "TestA.txt").Any(), "missing TestA");
-            Assert.IsTrue(shell.ListFiles(recursive: true).Where(path => Path.GetFileName(path) == "TestB.txt").Any(), "missing TestB");
-            Assert.IsTrue(shell.ListFiles(recursive: true).Where(path => Path.GetFileName(path) == "TestC.txt").Any(), "missing TestC");
-            Assert.IsTrue(shell.ListFiles(recursive: true).Where(path => Path.GetFileName(path) == "TestD.txt").Any(), "missing TestD");
-            Assert.IsTrue(shell.ListFiles(recursive: true).Where(path => Path.GetFileName(path) == "TestE.txt").Any(), "missing TestE");
-            Assert.IsTrue(shell.ListFiles(recursive: true).Where(path => Path.GetFileName(path) == "TestF.txt").Any(), "missing TestF");
-            Assert.AreEqual(6, shell.ListFiles(recursive: true).Count(), "shallow count is wrong");
-
-            Assert.IsTrue(shell.ListFiles("TestF*", recursive: true).Where(path => Path.GetFileName(path) == "TestF.txt").Any(), "missing TestF pattern");
-            Assert.AreEqual(1, shell.ListFiles("TestF*", recursive: true).Count(), "count wrong TestF pattern");
-        }
-
-        [TestMethod]
-        public void TestListFolders()
-        {
-            Environment.CurrentDirectory = testFolder;
-            var shell = new CShell();
-
-            Assert.IsTrue(shell.ListFolders().Where(path => Path.GetFileName(path) == "subfolder").Any(), "missing subfolder");
-            Assert.AreEqual(1, shell.ListFolders().Count(), "shallow count is wrong");
-
-            Assert.IsTrue(shell.ListFolders(recursive: true).Where(path => Path.GetFileName(path) == "subfolder").Any(), "missing subfolder");
-            Assert.IsTrue(shell.ListFolders(recursive: true).Where(path => Path.GetFileName(path) == "subfolder2").Any(), "missing subfolder2");
-            Assert.AreEqual(2, shell.ListFolders(recursive: true).Count(), "shallow count is wrong");
-
-            Assert.IsFalse(shell.ListFolders("TestF*", recursive: true).Where(path => Path.GetFileName(path) == "TestF.txt").Any(), "missing TestF pattern");
-            Assert.AreEqual(0, shell.ListFolders("TestF*", recursive: true).Count(), "count wrong TestF pattern");
-        }
-
     }
 
 }

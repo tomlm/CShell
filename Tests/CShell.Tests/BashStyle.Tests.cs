@@ -25,18 +25,6 @@ namespace CShellLibTests
         }
 
         [TestMethod]
-        public void CShellEnvironment()
-        {
-            Environment.CurrentDirectory = testFolder;
-
-            CShell shell = new CShell();
-            Assert.AreEqual(Environment.GetEnvironmentVariable("path"), shell.Environment["Path"], "environment missing");
-            Assert.AreEqual(testFolder, shell.cwd(), "currentFolder should be set");
-            Assert.AreEqual(testFolder, shell.FolderHistory.First(), "history should be set");
-            Assert.AreEqual(1, shell.FolderHistory.Count(), "history should be one");
-        }
-
-        [TestMethod]
         public void CShellFolderChangingTracked()
         {
             Environment.CurrentDirectory = testFolder;
@@ -171,7 +159,7 @@ namespace CShellLibTests
         public async Task TestAsFile()
         {
             CShell shell = new CShell();
-            shell.CurrentFolder = testFolder;
+            shell.ChangeFolder(testFolder);
 
             var tmpOut = Path.GetTempFileName();
             var tmpErr = Path.GetTempFileName();

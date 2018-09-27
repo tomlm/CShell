@@ -41,7 +41,7 @@ namespace CShellLibTests
         public async Task TestAsString()
         {
             CShell shell = new CShell();
-            shell.CurrentFolder = testFolder;
+            shell.ChangeFolder(testFolder);
 
             var record = await shell.ReadFile("TestA.txt").AsString();
             var text = File.ReadAllText(Path.Combine(testFolder, "TestA.Txt"));
@@ -52,7 +52,7 @@ namespace CShellLibTests
         public async Task TestAsJson()
         {
             CShell shell = new CShell();
-            shell.CurrentFolder = testFolder;
+            shell.ChangeFolder(testFolder);
 
             var record = await shell.ReadFile("TestA.txt").AsJson<TestRecord>();
             Assert.AreEqual("Joe Smith", record.Name, "name is wrong");
@@ -71,7 +71,7 @@ namespace CShellLibTests
         public async Task TestAsXml()
         {
             CShell shell = new CShell();
-            shell.CurrentFolder = testFolder;
+            shell.ChangeFolder(testFolder);
 
             var record = await shell.ReadFile("TestB.txt").AsXml<TestRecord>();
             Assert.AreEqual("Joe Smith", record.Name, "name is wrong");
@@ -82,7 +82,7 @@ namespace CShellLibTests
         public async Task TestAsResult()
         {
             CShell shell = new CShell();
-            shell.CurrentFolder = testFolder;
+            shell.ChangeFolder(testFolder);
 
             var result = await shell.ReadFile("TestA.txt").AsResult();
             var text = File.ReadAllText(Path.Combine(testFolder, "TestA.Txt"));
@@ -99,7 +99,7 @@ namespace CShellLibTests
         public async Task TestAsFile()
         {
             CShell shell = new CShell();
-            shell.CurrentFolder = testFolder;
+            shell.ChangeFolder(testFolder);
 
             var tmpOut = Path.GetTempFileName();
             var tmpErr = Path.GetTempFileName();

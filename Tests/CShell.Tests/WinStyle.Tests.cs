@@ -24,17 +24,6 @@ namespace CShellLibTests
             subFolder2 = Path.Combine(subFolder, "subfolder2");
         }
 
-        [TestMethod]
-        public void CShellEnvironment()
-        {
-            Environment.CurrentDirectory = testFolder;
-
-            CShell shell = new CShell();
-            Assert.AreEqual(Environment.GetEnvironmentVariable("path"), shell.Environment["Path"], "environment missing");
-            Assert.AreEqual(testFolder, shell.CurrentFolder, "currentFolder should be set");
-            Assert.AreEqual(testFolder, shell.FolderHistory.First(), "history should be set");
-            Assert.AreEqual(1, shell.FolderHistory.Count(), "history should be one");
-        }
 
         [TestMethod]
         public void CShellFolderChangingTracked()
@@ -42,7 +31,7 @@ namespace CShellLibTests
             Environment.CurrentDirectory = testFolder;
 
             CShell shell = new CShell();
-            shell.CurrentFolder = subFolder;
+            shell.ChangeFolder(subFolder);
             Assert.AreEqual(subFolder, Environment.CurrentDirectory, "environment path not changed");
             Assert.AreEqual(subFolder, shell.CurrentFolder, "currentFolder not changed");
             Assert.AreEqual(subFolder, shell.FolderHistory[1], "history should be updated");
@@ -137,7 +126,7 @@ namespace CShellLibTests
             shell.md("xyz");
             Assert.IsTrue(Directory.EnumerateDirectories(testFolder).Where(path => Path.GetFileName(path) == "xyz").Any(), "xyz not created");
 
-            shell.CurrentFolder = testFolder;
+            shell.ChangeFolder(testFolder);
             shell.rd("xyz", true);
             Assert.IsFalse(Directory.EnumerateDirectories(testFolder).Where(path => Path.GetFileName(path) == "xyz").Any(), "xyz not created");
         }
@@ -172,7 +161,7 @@ namespace CShellLibTests
         public async Task TestAsFile()
         {
             CShell shell = new CShell();
-            shell.CurrentFolder = testFolder;
+            shell.ChangeFolder(testFolder);
 
             var tmpOut = Path.GetTempFileName();
             var tmpErr = Path.GetTempFileName();
