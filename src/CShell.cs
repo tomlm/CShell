@@ -96,6 +96,26 @@ namespace CShellNet
         }
 
         /// <summary>
+        /// Does folder exist
+        /// </summary>
+        /// <param name="folderPath">absolute or relative path to a folder</param>
+        /// <returns></returns>
+        public bool FolderExists(string folderPath)
+        {
+            return Directory.Exists(ResolvePath(folderPath));
+        }
+
+        /// <summary>
+        /// Does file exist
+        /// </summary>
+        /// <param name="folderPath">absolute or relative path to a folder</param>
+        /// <returns></returns>
+        public bool FileExists(string folderPath)
+        {
+            return File.Exists(ResolvePath(folderPath));
+        }
+
+        /// <summary>
         /// Create Folder
         /// </summary>
         /// <param name="folderPath">absolute or relative path to a folder</param>

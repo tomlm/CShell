@@ -5,7 +5,7 @@ CShell creates a runtime environment to make it easy to create C# based shell st
 CShell is built on top of MedallionShell and runs great as a CSX on .NET Core giving 
 you a great cross platform C# alternative to powershell and bash scripts.
 
-There are 2 functionalities which CShell provides:
+CShell provides:
 * The concept of a current folder with relative commands for navigating and manipulating files and folders
 * The ability to smoothly invoke processes and pipe 
 * Helpers to make it easy to work with the output of processes
@@ -63,6 +63,7 @@ to manipulate folders.
 | **DeleteFolder()** | Delete a folder relative to current folder                                   |
 | **PushFolder()**   | Push the current folder onto the stack and change folder to the new one      |
 | **PopFolder()**    | Pop the current folder off the stack and change the folder the popped folder |
+| **FolderExists()** | does the folder relative to current folder exist                             |
 
 ### CShell File Commands
 CShell defines a number of methods which work relative to the current folder to make it easy
@@ -73,6 +74,7 @@ to manipulate files.
 | **CopyFile()**   | Copy a file relative to current folder   |
 | **MoveFile()**   | Move a file relative to current folder   |
 | **DeleteFile()** | Delete a file relative to current folder |
+| **FileExists()** | does a file relative to current folder exist                             |
 
 #### Windows CMD Style Extensions
 To make working with CShell familiar to windows CMD programmers there is a namespace CShellNet.CmdStyle which
@@ -207,14 +209,14 @@ class MyScript: CShell()
 	{
 		// get the result as dynamic object
 		dynamic jsonResult  = await Run("cmd1", "args1")
-			.RedirectTo("cmd2", "args2", "args3")
-			.RedirectTo("cmd3", "args4")
+			.PipeTo("cmd2", "args2", "args3")
+			.PipeTo("cmd3", "args4")
 			.ToJson();
 
 		// get the json result as a typed object
 		MyObject myObject  = await Run("cmd1", "args1")
-			.RedirectTo("cmd2", "args2", "args3")
-			.RedirectTo("cmd3", "args4")
+			.PipeTo("cmd2", "args2", "args3")
+			.PipeTo("cmd3", "args4")
 			.ToJson<MyObject>();
 	}
 }
@@ -236,8 +238,8 @@ class MyScript: CShell()
 	{
 		// start with text file and pass into cmd2, then write the final stdout and stderr and return a CommandResult
 		var result  = await ReadFile("myfile.txt")
-			.RedirectTo("cmd2", "args2", "args3")
-			.RedirectTo("cmd3", "args4")
+			.PipeTo("cmd2", "args2", "args3")
+			.PipeTo("cmd3", "args4")
 			.AsFile("stdout.txt", "stderr.txt");
 	}
 }

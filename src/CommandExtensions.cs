@@ -99,6 +99,18 @@ namespace CShellNet
             return result;
         }
 
+        /// <summary>
+        /// Pipe to a new commmand
+        /// </summary>
+        /// <param name="sourceCommand"></param>
+        /// <param name="exe"></param>
+        /// <param name="arguments"></param>
+        /// <returns></returns>
+        public static Command PipeTo(this Command sourceCommand, string exe, params string[] arguments)
+        {
+            return sourceCommand.PipeTo(Command.Run(exe, arguments));
+        }
+
     }
 
 }

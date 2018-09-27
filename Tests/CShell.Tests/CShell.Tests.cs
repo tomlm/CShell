@@ -185,7 +185,8 @@ namespace CShellLibTests
 
             var shell = new CShell();
             shell.ChangeFolder(testFolder);
-            shell.DeleteFolder("test2", recursive: true);
+            if (Directory.Exists(shell.ResolvePath("test2")))
+                shell.DeleteFolder("test2", recursive: true);
 
             shell.CopyFolder("subfolder", "test2");
             Assert.IsTrue(File.Exists(Path.Combine(testFolder, "test2", "TestC.txt")));
