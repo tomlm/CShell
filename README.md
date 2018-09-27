@@ -156,7 +156,7 @@ CShell is built using [MedallionShell](https://github.com/madelson/MedallionShel
 processes and piping data between them.  CShell adds on location awareness and helper methods
 to make it even easier to work with the output of processes.
 
-To invoke a process you simply call .Run(). You can chain processes together using .RedirectTo(), pipe '**|**' or greater than '**>**'.
+To invoke a process you simply call .Run(). You can chain processes together using .PipeTo(), pipe '**|**' or greater than '**>**'.
 
 ```CSharp
 class MyScript: CShell()
@@ -165,8 +165,8 @@ class MyScript: CShell()
 	{
 		// Invoke multiple commands using fluent style
 		CommandResult result3 = await Run("cmd1", "args1")
-			.RedirectTo("cmd2", "args2", "args3")
-			.RedirectTo("cmd3", "args4")
+			.PipeTo("cmd2", "args2", "args3")
+			.PipeTo("cmd3", "args4")
 			.AsResult();
 
 		// we can even chain commands together with the pipe operator
