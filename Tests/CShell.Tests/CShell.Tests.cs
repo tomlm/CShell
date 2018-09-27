@@ -31,7 +31,7 @@ namespace CShellLibTests
             CShell shell = new CShell();
             shell.ChangeFolder(subFolder);
             Assert.AreEqual(subFolder, Environment.CurrentDirectory, "environment path not changed");
-            Assert.AreEqual(subFolder, shell.CurrentFolder, "currentFolder not changed");
+            Assert.AreEqual(subFolder, shell.CurrentFolder.FullName, "currentFolder not changed");
             Assert.AreEqual(subFolder, shell.FolderHistory[1], "history should be updated");
             Assert.AreEqual(testFolder, shell.FolderHistory[0], "history should be updated");
             Assert.AreEqual(2, shell.FolderHistory.Count(), "history should be two");
@@ -46,14 +46,14 @@ namespace CShellLibTests
 
             shell.PushFolder("subfolder");
             Assert.AreEqual(subFolder, Environment.CurrentDirectory, "CurrentDirectory should be changed");
-            Assert.AreEqual(subFolder, shell.CurrentFolder, "path should be changed");
+            Assert.AreEqual(subFolder, shell.CurrentFolder.FullName, "path should be changed");
             Assert.AreEqual(subFolder, shell.FolderHistory.Last(), "history should be updated");
             Assert.AreEqual(2, shell.FolderHistory.Count(), "history should be two");
             Assert.AreEqual(1, shell.FolderStack.Count, "stack should be one");
 
             shell.PushFolder("subfolder2");
             Assert.AreEqual(subFolder2, Environment.CurrentDirectory, "CurrentDirectory should be changed");
-            Assert.AreEqual(subFolder2, shell.CurrentFolder, "path should be changed");
+            Assert.AreEqual(subFolder2, shell.CurrentFolder.FullName, "path should be changed");
             Assert.AreEqual(subFolder2, shell.FolderHistory.Last(), "history should be updated");
             Assert.AreEqual(3, shell.FolderHistory.Count(), "history should be three");
             Assert.AreEqual(2, shell.FolderStack.Count, "stack should be two");
@@ -81,15 +81,15 @@ namespace CShellLibTests
 
             var shell = new CShell();
             shell.ChangeFolder(@"subfolder\subfolder2");
-            Assert.AreEqual(subFolder2, shell.CurrentFolder, "currentFolder relative path failed");
+            Assert.AreEqual(subFolder2, shell.CurrentFolder.FullName, "currentFolder relative path failed");
             shell.ChangeFolder(@"..\subfolder2");
-            Assert.AreEqual(subFolder2, shell.CurrentFolder, "currentFolder relative path failed2");
+            Assert.AreEqual(subFolder2, shell.CurrentFolder.FullName, "currentFolder relative path failed2");
             Assert.AreEqual(2, shell.FolderHistory.Count, "relative non-navigation shouldn't have created history record");
             shell.ChangeFolder(@"..\..");
-            Assert.AreEqual(testFolder, shell.CurrentFolder, "currentFolder relative path failed3");
+            Assert.AreEqual(testFolder, shell.CurrentFolder.FullName, "currentFolder relative path failed3");
             Assert.AreEqual(3, shell.FolderHistory.Count, "history ignored on relative path");
             shell.ChangeFolder(subFolder2);
-            Assert.AreEqual(subFolder2, shell.CurrentFolder, "absolute path failed");
+            Assert.AreEqual(subFolder2, shell.CurrentFolder.FullName, "absolute path failed");
         }
 
         [TestMethod]

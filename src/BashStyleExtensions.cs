@@ -21,41 +21,43 @@ namespace CShellNet.BashStyle
         /// <summary>
         /// change current working directory
         /// </summary>
+        /// <param name="folderPath">absolute or relative path</param>
         /// <returns></returns>
-        public static CShell cd(this CShell shell, string folder)
+        public static CShell cd(this CShell shell, string folderPath)
         {
-            shell.ChangeFolder(folder);
+            shell.ChangeFolder(folderPath);
             return shell;
         }
 
         /// <summary>
         /// change current working directory
         /// </summary>
+        /// <param name="folderPath">absolute or relative path</param>
         /// <returns></returns>
-        public static CShell chdir(this CShell shell, string folder)
+        public static CShell chdir(this CShell shell, string folderPath)
         {
-            shell.ChangeFolder(folder);
+            shell.ChangeFolder(folderPath);
             return shell;
         }
 
         /// <summary>
         /// Make directory
         /// </summary>
-        /// <param name="folder"></param>
+        /// <param name="folderPath">absolute or relative path</param>
         /// <returns></returns>
-        public static CShell mkdir(this CShell shell, string folder)
+        public static CShell mkdir(this CShell shell, string folderPath)
         {
-            return shell.CreateFolder(folder);
+            return shell.CreateFolder(folderPath);
         }
 
         /// <summary>
         /// remove directory
         /// </summary>
-        /// <param name="folder"></param>
+        /// <param name="folderPath">absolute or relative path</param>
         /// <returns></returns>
-        public static CShell rmdir(this CShell shell, string folder, bool recursive = false)
+        public static CShell rmdir(this CShell shell, string folderPath, bool recursive = false)
         {
-            return shell.DeleteFolder(folder, recursive);
+            return shell.DeleteFolder(folderPath, recursive);
         }
 
         /// <summary>
@@ -65,19 +67,30 @@ namespace CShellNet.BashStyle
         /// <returns></returns>
         public static IEnumerable<string> ls(this CShell shell, string searchPattern = null, bool recursive=false)
         {
-            return shell.CurrentFolder.EnumerateFileSystemInfos(searchPattern, (recursive) ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly)
+            return shell.CurrentFolder.EnumerateFileSystemInfos(searchPattern ?? "*", (recursive) ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly)
                 .Select( fileInfo => fileInfo.FullName);
+        }
+
+        /// <summary>
+        /// delete a file
+        /// </summary>
+        /// <param name="shell"></param>
+        /// <param name="filePath">absolute or relative path</param>
+        /// <returns></returns>
+        public static CShell rm(this CShell shell, string filePath)
+        {
+            return shell.DeleteFile(filePath);
         }
 
         /// <summary>
         /// Cat a file to stdout
         /// </summary>
         /// <param name="shell"></param>
-        /// <param name="path">path to file</param>
+        /// <param name="filePath">absolute or relative path</param>
         /// <returns></returns>
-        public static Command cat(this CShell shell, string path)
+        public static Command cat(this CShell shell, string filePath)
         {
-            return shell.ReadFile(path);
+            return shell.ReadFile(filePath);
         }
 
     }

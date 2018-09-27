@@ -1,6 +1,5 @@
 ﻿using Medallion.Shell;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -15,16 +14,30 @@ namespace CShellNet
     /// * Ability to invoke process and pipe input between processes (via MedallionShell library)
     /// </summary>
     public class CShell
-    { 
-        public CShell()
+    {
+        /// <summary>
+        /// Start a shell
+        /// </summary>
+        /// <param name="startingFolder">(OPTIONAL) if passed in, this will be the initial folder</param>
+        public CShell(string startingFolder = null)
         {
             this.FolderHistory = new List<string>();
             this.FolderStack = new Stack<string>();
-            this.FolderHistory.Add(Environment.CurrentDirectory);
+            if (startingFolder != null)
+            {
+                if (Path.IsPathRooted(startingFolder))
+                    CurrentFolder = new DirectoryInfo(startingFolder);
+                else
+                    CurrentFolder = new DirectoryInfo(Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, startingFolder)));
+            }
+            else
+            {
+                CurrentFolder = new DirectoryInfo(Environment.CurrentDirectory);
+            }
         }
 
         /// <summary>
-        /// Run executable
+        /// Run a process
         /// </summary>
         /// <param name="executable"></param>
         /// <param name="arguments"></param>
@@ -36,7 +49,7 @@ namespace CShellNet
 
 
         /// <summary>
-        /// Current directory
+        /// Current folder
         /// </summary>
         private DirectoryInfo _currentFolder;
         public DirectoryInfo CurrentFolder
@@ -68,27 +81,27 @@ namespace CShellNet
         public Stack<string> FolderStack { get; private set; }
 
         /// <summary>
-        /// Change Folder (supporting relative changes
+        /// Change Current Folder 
         /// </summary>
-        /// <param name="relativePath"></param>
+        /// <param name="folderPath">absolute or relative path to a folder</param>
         /// <returns></returns>
-        public CShell ChangeFolder(string relativePath)
+        public CShell ChangeFolder(string folderPath)
         {
-            this.CurrentFolder = new DirectoryInfo(normalizePath(relativePath));
+            this.CurrentFolder = new DirectoryInfo(ResolvePath(folderPath));
             return this;
         }
 
         /// <summary>
         /// Create Folder
         /// </summary>
-        /// <param name="folder"></param>
+        /// <param name="folderPath">absolute or relative path to a folder</param>
         /// <returns></returns>
-        public CShell CreateFolder(string folder)
+        public CShell CreateFolder(string folderPath)
         {
-            folder = normalizePath(folder);
-            if (!Directory.Exists(folder))
+            folderPath = ResolvePath(folderPath);
+            if (!Directory.Exists(folderPath))
             {
-                Directory.CreateDirectory(folder);
+                Directory.CreateDirectory(folderPath);
             }
             return this;
         }
@@ -96,25 +109,25 @@ namespace CShellNet
         /// <summary>
         /// delete a Folder 
         /// </summary>
-        /// <param name="folder"></param>
+        /// <param name="folderPath">absolute or relative path to a folder</param>
         /// <param name="recursive"></param>
         /// <returns></returns>
-        public CShell DeleteFolder(string folder, bool recursive = false)
+        public CShell DeleteFolder(string folderPath, bool recursive = false)
         {
-            folder = normalizePath(folder);
-            Directory.Delete(folder, recursive);
+            folderPath = ResolvePath(folderPath);
+            Directory.Delete(folderPath, recursive);
             return this;
         }
 
         /// <summary>
         /// Change to a folder and add it to the stack
         /// </summary>
-        /// <param name="folder"></param>
+        /// <param name="folderPath">absolute or relative path to a folder</param>
         /// <returns></returns>
-        public CShell PushFolder(string folder)
+        public CShell PushFolder(string folderPath)
         {
             var oldFolder = this.CurrentFolder;
-            ChangeFolder(folder);
+            ChangeFolder(folderPath);
             this.FolderStack.Push(oldFolder.FullName);
             return this;
         }
@@ -130,16 +143,25 @@ namespace CShellNet
         }
 
         /// <summary>
+        /// Delete a file relative to current folder
+        /// </summary>
+        /// <param name="filePath">absolute or relative path to file</param>
+        /// <returns></returns>
+        public CShell DeleteFile(string filePath)
+        {
+            var path = ResolvePath(filePath);
+            File.Delete(path);
+            return this;
+        }
+
+        /// <summary>
         /// Take a file and write to standard out, suitable for piping into other programs
         /// </summary>
-        /// <param name="path"></param>
+        /// <param name="filePath">absolute or relative path to file</param>
         /// <returns></returns>
-        public Command ReadFile(string path)
+        public Command ReadFile(string filePath)
         {
-            if (!Path.IsPathRooted(path))
-            {
-                path = Path.GetFullPath(Path.Combine(this.CurrentFolder.FullName, path));
-            }
+            var path = ResolvePath(filePath);
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
@@ -155,6 +177,27 @@ namespace CShellNet
             throw new ArgumentOutOfRangeException("Unknown operating system");
         }
 
+        /// <summary>
+        /// Resolve a path relative to CurrentFolder
+        /// </summary>
+        /// <param name="absoluteOrReltivePath">absolute or relative path</param>
+        /// <returns></returns>
+        public string ResolvePath(string absoluteOrReltivePath)
+        {
+            if (absoluteOrReltivePath == null)
+            {
+                throw new ArgumentNullException(nameof(absoluteOrReltivePath));
+            }
+
+            if (Path.IsPathRooted(absoluteOrReltivePath))
+            {
+                return Path.GetFullPath(absoluteOrReltivePath);
+            }
+            else
+            {
+                return Path.GetFullPath(Path.Combine(this.CurrentFolder.FullName, absoluteOrReltivePath));
+            }
+        }
 
         private void setCommandOptions(Shell.Options options)
         {
@@ -163,23 +206,6 @@ namespace CShellNet
                 // set working folder
                 psi.WorkingDirectory = this.CurrentFolder.FullName;
             });
-        }
-
-        private string normalizePath(string folder)
-        {
-            if (folder == null)
-            {
-                throw new ArgumentNullException(nameof(folder));
-            }
-
-            if (Path.IsPathRooted(folder))
-            {
-                return Path.GetFullPath(folder);
-            }
-            else
-            {
-                return Path.GetFullPath(Path.Combine(this.CurrentFolder.FullName, folder));
-            }
         }
 
     }
