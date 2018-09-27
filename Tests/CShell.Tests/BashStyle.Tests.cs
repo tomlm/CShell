@@ -164,15 +164,17 @@ namespace CShellLibTests
             var tmpOut = Path.GetTempFileName();
             var tmpErr = Path.GetTempFileName();
 
-            var result = await shell.cat("TestA.txt").ToFile(tmpOut);
+            var result = await shell.cat("TestA.txt").AsFile(tmpOut);
             var stdout = File.ReadAllText(tmpOut);
             Assert.AreEqual(stdout, result.StandardOutput, "result stdout");
 
-            var result2 = await shell.cat("TestAsdfsdf.txt").ToFile(tmpOut, tmpErr);
+            var result2 = await shell.cat("TestAsdfsdf.txt").AsFile(tmpOut, tmpErr);
             var stdout2 = File.ReadAllText(tmpOut);
             var stderr2 = File.ReadAllText(tmpErr);
             Assert.AreEqual(stdout2, result2.StandardOutput, "result stdout");
             Assert.AreEqual(stderr2, result2.StandardError, "result stderr");
+            File.Delete(tmpOut);
+            File.Delete(tmpErr);
         }
     }
 

@@ -74,11 +74,11 @@ namespace CShellNet
         }
 
         /// <summary>
-        /// Take a file and write to standard out, suitable for piping into other programs
+        /// Take a StandardOutput/StandardError of previous command and write to file
         /// </summary>
-        /// <param name="stdoutPath"></param>
-        /// <returns></returns>
-        public static async Task<CommandResult> ToFile(this Command cmd, string stdoutPath, string stderrPath = null)
+        /// <param name="stdoutPath">path to write to</param>
+        /// <returns>CommandResult of previous command</returns>
+        public static async Task<CommandResult> AsFile(this Command cmd, string stdoutPath, string stderrPath = null)
         {
             var result = await cmd.Task;
 
@@ -99,30 +99,6 @@ namespace CShellNet
             return result;
         }
 
-        // Currently the process appears to be not acccessible at this point. 
-#if UPDATEENVIRONMENT
-        /// <summary>
-        /// Update the shell environment based on changes that the process has done
-        /// </summary>
-        /// <param name="cmd"></param>
-        /// <returns>task which represents the completition of the command chain</returns>
-        public static async Task<CommandResult> UpdateEnvironment(this Command cmd, CShell shell)
-        {
-            var result = await cmd.Task.ConfigureAwait(false);
-
-            if (cmd.Process.StartInfo.WorkingDirectory != shell.CurrentFolder)
-            {
-                shell.CurrentFolder = cmd.Process.StartInfo.WorkingDirectory;
-            }
-
-            shell.Environment.Clear();
-            foreach(var keyValue in cmd.Process.StartInfo.Environment)
-            {
-                shell.Environment[keyValue.Key] = keyValue.Value;
-            }
-            return result;
-        }
-#endif
     }
 
 }
