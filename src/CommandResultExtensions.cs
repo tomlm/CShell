@@ -56,5 +56,16 @@ namespace CShellNet
                 return (T)serializer.Deserialize(reader);
             }
         }
+
+        /// <summary>
+        /// Redirect from string content
+        /// </summary>
+        /// <param name="cmd"></param>
+        /// <param name="content"></param>
+        /// <returns></returns>
+        public static Command RedirectFrom(this Command cmd, string content)
+        {
+            return cmd.RedirectFrom(new StringReader(content));
+        }
     }
 }

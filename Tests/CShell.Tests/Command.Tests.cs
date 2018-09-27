@@ -43,6 +43,9 @@ namespace CShellLibTests
             CShell shell = new CShell();
             shell.ChangeFolder(testFolder);
 
+            var result = await shell.Run("cmd", "/c", "echo this is a yo yo").AsString();
+            Assert.AreEqual("this is a yo yo", result.Trim(), "AsString");
+
             var record = await shell.ReadFile("TestA.txt").AsString();
             var text = File.ReadAllText(Path.Combine(testFolder, "TestA.Txt"));
             Assert.AreEqual(record, text, "AsString");
