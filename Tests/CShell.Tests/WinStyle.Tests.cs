@@ -26,21 +26,7 @@ namespace CShellLibTests
 
 
         [TestMethod]
-        public void CShellFolderChangingTracked()
-        {
-            Environment.CurrentDirectory = testFolder;
-
-            CShell shell = new CShell();
-            shell.ChangeFolder(subFolder);
-            Assert.AreEqual(subFolder, Environment.CurrentDirectory, "environment path not changed");
-            Assert.AreEqual(subFolder, shell.CurrentFolder.FullName, "currentFolder not changed");
-            Assert.AreEqual(subFolder, shell.FolderHistory[1], "history should be updated");
-            Assert.AreEqual(testFolder, shell.FolderHistory[0], "history should be updated");
-            Assert.AreEqual(2, shell.FolderHistory.Count(), "history should be two");
-        }
-
-        [TestMethod]
-        public void CShellPushpopd()
+        public void Test_pushd_popd()
         {
             Environment.CurrentDirectory = testFolder;
 
@@ -77,7 +63,7 @@ namespace CShellLibTests
         }
 
         [TestMethod]
-        public void ChangeFolder()
+        public void Test_cd()
         {
             Environment.CurrentDirectory = testFolder;
 
@@ -95,7 +81,7 @@ namespace CShellLibTests
         }
 
         [TestMethod]
-        public void Createrd()
+        public void Test_md_rd()
         {
             Environment.CurrentDirectory = testFolder;
             var shell = new CShell();
@@ -111,7 +97,7 @@ namespace CShellLibTests
         }
 
         [TestMethod]
-        public void rdRecursive()
+        public void Test_rd_recursive()
         {
             Environment.CurrentDirectory = testFolder;
             var shell = new CShell();
@@ -132,7 +118,7 @@ namespace CShellLibTests
         }
 
         [TestMethod]
-        public void Testdir()
+        public void Test_dir()
         {
             Environment.CurrentDirectory = testFolder;
             var shell = new CShell();
@@ -158,7 +144,7 @@ namespace CShellLibTests
 
 
         [TestMethod]
-        public async Task TestAsFile()
+        public async Task Test_type()
         {
             CShell shell = new CShell();
             shell.ChangeFolder(testFolder);

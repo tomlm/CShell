@@ -24,7 +24,7 @@ namespace CShellLibTests
 
 
         [TestMethod]
-        public void CShellFolderChangingTracked()
+        public void Test_CurrentDirectory()
         {
             Environment.CurrentDirectory = testFolder;
 
@@ -38,7 +38,7 @@ namespace CShellLibTests
         }
 
         [TestMethod]
-        public void CShellPushPopFolder()
+        public void Test_PushPopFolder()
         {
             Environment.CurrentDirectory = testFolder;
 
@@ -75,7 +75,7 @@ namespace CShellLibTests
         }
 
         [TestMethod]
-        public void ChangeFolder()
+        public void Test_ChangeFolder()
         {
             Environment.CurrentDirectory = testFolder;
 
@@ -93,13 +93,15 @@ namespace CShellLibTests
         }
 
         [TestMethod]
-        public void CreateDeleteFolder()
+        public void Test_CreateDeleteFolder()
         {
             Environment.CurrentDirectory = testFolder;
             var shell = new CShell();
             string xyz = Path.Combine(testFolder, "xyz");
             if (Directory.Exists(xyz))
+            {
                 Directory.Delete(xyz);
+            }
 
             shell.CreateFolder("xyz");
             Assert.IsTrue(Directory.EnumerateDirectories(testFolder).Where(path => Path.GetFileName(path) == "xyz").Any(), "xyz not created");
@@ -109,13 +111,15 @@ namespace CShellLibTests
         }
 
         [TestMethod]
-        public void DeleteFolderRecursive()
+        public void Test_DeleteFolderRecursive()
         {
             Environment.CurrentDirectory = testFolder;
             var shell = new CShell();
             string xyz = Path.Combine(testFolder, "xyz");
             if (Directory.Exists(xyz))
+            {
                 Directory.Delete(xyz, true);
+            }
 
             shell.CreateFolder("xyz");
             Assert.IsTrue(Directory.EnumerateDirectories(testFolder).Where(path => Path.GetFileName(path) == "xyz").Any(), "xyz not created");
@@ -127,6 +131,71 @@ namespace CShellLibTests
             shell.ChangeFolder(testFolder);
             shell.DeleteFolder("xyz", true);
             Assert.IsFalse(Directory.EnumerateDirectories(testFolder).Where(path => Path.GetFileName(path) == "xyz").Any(), "xyz not created");
+        }
+
+
+        [TestMethod]
+        public void Test_MoveFile()
+        {
+            Environment.CurrentDirectory = testFolder;
+
+            var shell = new CShell();
+            shell.ChangeFolder(testFolder);
+            File.WriteAllText(Path.Combine(shell.CurrentFolder.FullName, "test.txt"), "test");
+
+            shell.MoveFile("test.txt", subFolder);
+            string path2 = Path.Combine(subFolder, "test.txt");
+            Assert.IsTrue(File.Exists(path2));
+
+            shell.ChangeFolder(subFolder);
+            shell.MoveFile("test.txt", Path.Combine("..", "test2.txt"));
+            string path3 = Path.Combine(testFolder, "test2.txt");
+            Assert.IsTrue(File.Exists(path3));
+
+            File.Delete(Path.Combine(testFolder, "test2.txt"));
+        }
+
+        [TestMethod]
+        public void Test_CopyFile()
+        {
+            Environment.CurrentDirectory = testFolder;
+
+            var shell = new CShell();
+            shell.ChangeFolder(testFolder);
+            File.WriteAllText(Path.Combine(shell.CurrentFolder.FullName, "test.txt"), "test");
+
+            shell.CopyFile("test.txt", subFolder);
+            string path2 = Path.Combine(subFolder, "test.txt");
+            Assert.IsTrue(File.Exists(path2));
+
+            shell.ChangeFolder(subFolder);
+            shell.CopyFile("test.txt", Path.Combine("..", "test2.txt"));
+            string path3 = Path.Combine(testFolder, "test2.txt");
+            Assert.IsTrue(File.Exists(path3));
+
+            File.Delete(Path.Combine(subFolder, "test.txt"));
+            File.Delete(Path.Combine(testFolder, "test.txt"));
+            File.Delete(Path.Combine(testFolder, "test2.txt"));
+        }
+
+        [TestMethod]
+        public void Test_MoveCopyFolder()
+        {
+            Environment.CurrentDirectory = testFolder;
+
+            var shell = new CShell();
+            shell.ChangeFolder(testFolder);
+            shell.DeleteFolder("test2", recursive: true);
+
+            shell.CopyFolder("subfolder", "test2");
+            Assert.IsTrue(File.Exists(Path.Combine(testFolder, "test2", "TestC.txt")));
+            Assert.IsTrue(File.Exists(Path.Combine(testFolder, "test2", "subfolder2", "TestE.txt")));
+            shell.MoveFolder("test2", "test3");
+            Assert.IsTrue(!Directory.Exists("test2"));
+            Assert.IsTrue(File.Exists(Path.Combine(testFolder, "test3", "TestC.txt")));
+            Assert.IsTrue(File.Exists(Path.Combine(testFolder, "test3", "subfolder2", "TestE.txt")));
+
+            shell.DeleteFolder("test3", recursive:true);
         }
     }
 

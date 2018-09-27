@@ -15,6 +15,9 @@
     <RepositoryType>git</RepositoryType>
     <PackageTags>scripting dotnet csharp</PackageTags>
     <PackageId>CShell.Net</PackageId>
+    <AssemblyVersion>1.0.7.0</AssemblyVersion>
+    <FileVersion>1.0.7.0</FileVersion>
+    <Version>1.0.7</Version>
   </PropertyGroup>
 
   <ItemGroup>

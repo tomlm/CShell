@@ -7,7 +7,11 @@ you a great cross platform C# alternative to powershell and bash scripts.
 
 There are 2 functionalities which CShell provides:
 * The concept of a current folder with relative commands for navigating and manipulating files and folders
-* The ability to smoothly invoke processes and pipe and manipulate the output of processes
+* The ability to smoothly invoke processes and pipe 
+* Helpers to make it easy to work with the output of processes
+
+By maintaining the concept of a current folder then all file and folder commands can be expressed
+using relative paths just like a normal shell.
 
 You can just create a CShell directly and start working with it
 ```csharp
@@ -54,6 +58,8 @@ to manipulate folders.
 |--------------------|------------------------------------------------------------------------------|
 | **ChangeFolder()** | Change the current folder with relative or absolute path                     |
 | **CreateFolder()** | Create a folder relative to current folder                                   |
+| **CopyFolder()**   | copy a folder relative to current folder                                     |
+| **MoveFolder()**   | move a folder relative to current folder                                     |
 | **DeleteFolder()** | Delete a folder relative to current folder                                   |
 | **PushFolder()**   | Push the current folder onto the stack and change folder to the new one      |
 | **PopFolder()**    | Pop the current folder off the stack and change the folder the popped folder |
@@ -62,12 +68,14 @@ to manipulate folders.
 CShell defines a number of methods which work relative to the current folder to make it easy
 to manipulate files.
 
-| Method             | Description                                                                  |
-|--------------------|------------------------------------------------------------------------------|
-| **DeleteFile()**   | Delete a file relative to current folder                                     |
+| Method           | Description                              |
+|------------------|------------------------------------------|
+| **CopyFile()**   | Copy a file relative to current folder   |
+| **MoveFile()**   | Move a file relative to current folder   |
+| **DeleteFile()** | Delete a file relative to current folder |
 
 #### Windows CMD Style Extensions
-To make working with CShell familiar to windows programmers there is a namespace CShellNet.CmdStyle which
+To make working with CShell familiar to windows CMD programmers there is a namespace CShellNet.CmdStyle which
 when you add it adds extension methods that look like CMD style methods.
 
 | Method       | Description                                                                                        |
@@ -142,11 +150,11 @@ class MyScript: CShell()
 ```
 
 ### CShell Process Commands
-CShell is built on using [MedallionShell](https://github.com/madelson/MedallionShell), which provides a great set of functionality for easily invoking 
+CShell is built using [MedallionShell](https://github.com/madelson/MedallionShell), which provides a great set of functionality for easily invoking 
 processes and piping data between them.  CShell adds on location awareness and helper methods
-to make it even easier to work with processes.
+to make it even easier to work with the output of processes.
 
-You can use .RedirectTo(), pipe '**|**' or greater than '**>**' to chain processes together.
+To invoke a process you simply call .Run(). You can chain processes together using .RedirectTo(), pipe '**|**' or greater than '**>**'.
 
 ```CSharp
 class MyScript: CShell()
@@ -184,6 +192,7 @@ easier to work with the result of a command chain.
 | Method           | Description                                                                  |
 |------------------|------------------------------------------------------------------------------|
 | **AsResult()**   | get the CommandResult (with stdout/stderr) of the last command               |
+| **AsString()**   | get the standard out of the last command a string                            |
 | **AsJson()**     | JSON Deserialize the standard out of the last command into a JObject/dynamic |
 | **AsJson\<T>()** | JSON Deserialize the standard out of the last command into a typed T         |
 | **AsXml\<T>()**  | XML Deserialize the standard out of the last command intoa typed T           |

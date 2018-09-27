@@ -38,7 +38,7 @@ namespace CShellLibTests
         }
 
         [TestMethod]
-        public async Task TestAsString()
+        public async Task Test_AsString()
         {
             CShell shell = new CShell();
             shell.ChangeFolder(testFolder);
@@ -49,7 +49,7 @@ namespace CShellLibTests
         }
 
         [TestMethod]
-        public async Task TestAsJson()
+        public async Task Test_AsJson()
         {
             CShell shell = new CShell();
             shell.ChangeFolder(testFolder);
@@ -68,7 +68,7 @@ namespace CShellLibTests
         }
 
         [TestMethod]
-        public async Task TestAsXml()
+        public async Task Test_AsXml()
         {
             CShell shell = new CShell();
             shell.ChangeFolder(testFolder);
@@ -79,7 +79,7 @@ namespace CShellLibTests
         }
 
         [TestMethod]
-        public async Task TestAsResult()
+        public async Task Test_AsResult()
         {
             CShell shell = new CShell();
             shell.ChangeFolder(testFolder);
@@ -96,7 +96,7 @@ namespace CShellLibTests
         }
 
         [TestMethod]
-        public async Task TestAsFile()
+        public async Task Test_AsFile()
         {
             CShell shell = new CShell();
             shell.ChangeFolder(testFolder);

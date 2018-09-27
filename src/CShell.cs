@@ -26,9 +26,13 @@ namespace CShellNet
             if (startingFolder != null)
             {
                 if (Path.IsPathRooted(startingFolder))
+                {
                     CurrentFolder = new DirectoryInfo(startingFolder);
+                }
                 else
+                {
                     CurrentFolder = new DirectoryInfo(Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, startingFolder)));
+                }
             }
             else
             {
@@ -44,7 +48,7 @@ namespace CShellNet
         /// <returns></returns>
         public Command Run(String executable, params Object[] arguments)
         {
-            return Command.Run(executable, arguments, setCommandOptions);
+            return Command.Run(executable, arguments, SetCommandOptions);
         }
 
 
@@ -107,6 +111,58 @@ namespace CShellNet
         }
 
         /// <summary>
+        /// Copy a Folder 
+        /// </summary>
+        /// <param name="sourceFolderPath">absolute or relative path to a source folder</param>
+        /// <param name="targetFolderPath">absolute or relative path to a target folder</param>
+        /// <param name="recursive"></param>
+        /// <returns></returns>
+        public CShell CopyFolder(string sourceFolderPath, string targetFolderPath, bool recursive = false)
+        {
+            var sourcePath = ResolvePath(sourceFolderPath);
+            var targetPath = ResolvePath(targetFolderPath);
+            CopyFolder(sourcePath, targetPath);
+
+            void CopyFolder(string srcFolder, string destFolder)
+            {
+                if (!Directory.Exists(destFolder))
+                {
+                    Directory.CreateDirectory(destFolder);
+                }
+
+                string[] files = Directory.GetFiles(srcFolder);
+                foreach (string file in files)
+                {
+                    string name = Path.GetFileName(file);
+                    string dest = Path.Combine(destFolder, name);
+                    File.Copy(file, dest);
+                }
+                string[] folders = Directory.GetDirectories(srcFolder);
+                foreach (string folder in folders)
+                {
+                    string name = Path.GetFileName(folder);
+                    string dest = Path.Combine(destFolder, name);
+                    CopyFolder(folder, dest);
+                }
+            }
+            return this;
+        }
+
+        /// <summary>
+        /// Move a Folder 
+        /// </summary>
+        /// <param name="sourceFolderPath">absolute or relative path to a source folder</param>
+        /// <param name="targetFolderPath">absolute or relative path to a target folder</param>
+        /// <returns></returns>
+        public CShell MoveFolder(string sourceFolderPath, string targetFolderPath)
+        {
+            var sourcePath = ResolvePath(sourceFolderPath);
+            var targetPath = ResolvePath(targetFolderPath);
+            Directory.Move(sourcePath, targetPath);
+            return this;
+        }
+
+        /// <summary>
         /// delete a Folder 
         /// </summary>
         /// <param name="folderPath">absolute or relative path to a folder</param>
@@ -143,6 +199,38 @@ namespace CShellNet
         }
 
         /// <summary>
+        /// copy a file to a file relative to current folder
+        /// </summary>
+        /// <param name="sourceFilePath">absolute or relative path source file</param>
+        /// <param name="targetFilePath">absolute or relative path target file</param>
+        /// <returns></returns>
+        public CShell CopyFile(string sourceFilePath, string targetFilePath, bool overwrite = false)
+        {
+            var sourcePath = ResolvePath(sourceFilePath);
+            var targetPath = ResolvePath(targetFilePath);
+            if (Directory.Exists(targetPath))
+                targetPath = Path.Combine(targetPath, Path.GetFileName(sourcePath));
+            File.Copy(sourcePath, targetPath, overwrite);
+            return this;
+        }
+
+        /// <summary>
+        /// move a file to a file relative to current folder
+        /// </summary>
+        /// <param name="sourceFilePath">absolute or relative path source file</param>
+        /// <param name="targetFilePath">absolute or relative path target file</param>
+        /// <returns></returns>
+        public CShell MoveFile(string sourceFilePath, string targetFilePath)
+        {
+            var sourcePath = ResolvePath(sourceFilePath);
+            var targetPath = ResolvePath(targetFilePath);
+            if (Directory.Exists(targetPath))
+                targetPath = Path.Combine(targetPath, Path.GetFileName(sourcePath));
+            File.Move(sourcePath, targetPath);
+            return this;
+        }
+
+        /// <summary>
         /// Delete a file relative to current folder
         /// </summary>
         /// <param name="filePath">absolute or relative path to file</param>
@@ -166,13 +254,13 @@ namespace CShellNet
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
                 string[] args = new string[] { "/c", "type", path };
-                return Command.Run("cmd.exe", args, setCommandOptions);
+                return Command.Run("cmd.exe", args, SetCommandOptions);
             }
             else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ||
                      RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
             {
                 string[] args = new string[] { path };
-                return Command.Run("cat", args, setCommandOptions);
+                return Command.Run("cat", args, SetCommandOptions);
             }
             throw new ArgumentOutOfRangeException("Unknown operating system");
         }
@@ -199,7 +287,11 @@ namespace CShellNet
             }
         }
 
-        private void setCommandOptions(Shell.Options options)
+        /// <summary>
+        /// Override this to control the MedallionShell options for .Run()
+        /// </summary>
+        /// <param name="options"></param>
+        public virtual void SetCommandOptions(Shell.Options options)
         {
             options.StartInfo((psi) =>
             {

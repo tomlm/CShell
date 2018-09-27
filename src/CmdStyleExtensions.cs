@@ -39,6 +39,44 @@ namespace CShellNet.CmdStyle
         }
 
         /// <summary>
+        /// copy file
+        /// </summary>
+        /// <param name="sourcePath">absolute or relative path to a source file</param>
+        /// <param name="targetPath">absolute or relative path to a target File</param>
+        /// <returns></returns>
+        public static CShell copy(this CShell shell, string sourcePath, string targetPath, bool overwrite=false)
+        {
+            return shell.CopyFile(sourcePath, targetPath, overwrite);
+        }
+
+        /// <summary>
+        /// rename file
+        /// </summary>
+        /// <param name="sourcePath">absolute or relative path to a source file</param>
+        /// <param name="targetPath">absolute or relative path to a target File</param>
+        /// <returns></returns>
+        public static CShell rename(this CShell shell, string sourcePath, string targetPath)
+        {
+            return shell.MoveFile(sourcePath, targetPath);
+        }
+
+        /// <summary>
+        /// move file or folder
+        /// </summary>
+        /// <param name="sourcePath">absolute or relative path to a source file or folder</param>
+        /// <param name="targetPath">absolute or relative path to a target file or folder</param>
+        /// <returns></returns>
+        public static CShell move(this CShell shell, string sourcePath, string targetPath)
+        {
+            sourcePath = shell.ResolvePath(sourcePath);
+            targetPath = shell.ResolvePath(targetPath);
+            if (Directory.Exists(sourcePath))
+                return shell.MoveFolder(sourcePath, targetPath);
+            else 
+                return shell.MoveFile(sourcePath, targetPath);
+        }
+
+        /// <summary>
         /// Make directory
         /// </summary>
         /// <param name="folderPath">absolute or relative path to a folder</param>

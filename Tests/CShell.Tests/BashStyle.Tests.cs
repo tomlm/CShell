@@ -25,7 +25,7 @@ namespace CShellLibTests
         }
 
         [TestMethod]
-        public void CShellFolderChangingTracked()
+        public void Test_cwd()
         {
             Environment.CurrentDirectory = testFolder;
 
@@ -39,44 +39,7 @@ namespace CShellLibTests
         }
 
         [TestMethod]
-        public void CShellPushPopFolder()
-        {
-            Environment.CurrentDirectory = testFolder;
-
-            CShell shell = new CShell();
-
-            shell.PushFolder("subfolder");
-            Assert.AreEqual(subFolder, Environment.CurrentDirectory, "CurrentDirectory should be changed");
-            Assert.AreEqual(subFolder, shell.cwd(), "path should be changed");
-            Assert.AreEqual(subFolder, shell.FolderHistory.Last(), "history should be updated");
-            Assert.AreEqual(2, shell.FolderHistory.Count(), "history should be two");
-            Assert.AreEqual(1, shell.FolderStack.Count, "stack should be one");
-
-            shell.PushFolder("subfolder2");
-            Assert.AreEqual(subFolder2, Environment.CurrentDirectory, "CurrentDirectory should be changed");
-            Assert.AreEqual(subFolder2, shell.cwd(), "path should be changed");
-            Assert.AreEqual(subFolder2, shell.FolderHistory.Last(), "history should be updated");
-            Assert.AreEqual(3, shell.FolderHistory.Count(), "history should be three");
-            Assert.AreEqual(2, shell.FolderStack.Count, "stack should be two");
-
-            shell.PopFolder();
-            Assert.AreEqual(subFolder, Environment.CurrentDirectory, "CurrentDirectory should be changed");
-            Assert.AreEqual(1, shell.FolderStack.Count, "stack should be one");
-
-            shell.PopFolder();
-            Assert.AreEqual(testFolder, Environment.CurrentDirectory, "CurrentDirectory should be changed");
-            Assert.AreEqual(0, shell.FolderStack.Count, "stack should be zero");
-
-            try
-            {
-                shell.PopFolder();
-                Assert.Fail("PopFolder() Should have thrown when empty");
-            }
-            catch (Exception) { }
-        }
-
-        [TestMethod]
-        public void cd()
+        public void Test_cd()
         {
             Environment.CurrentDirectory = testFolder;
 
@@ -94,7 +57,7 @@ namespace CShellLibTests
         }
 
         [TestMethod]
-        public void Creatermdir()
+        public void Test_rmdir()
         {
             Environment.CurrentDirectory = testFolder;
             var shell = new CShell();
@@ -110,7 +73,7 @@ namespace CShellLibTests
         }
 
         [TestMethod]
-        public void rmdirRecursive()
+        public void test_rmdir_recursive()
         {
             Environment.CurrentDirectory = testFolder;
             var shell = new CShell();
@@ -156,7 +119,7 @@ namespace CShellLibTests
         }
 
         [TestMethod]
-        public async Task TestAsFile()
+        public async Task Test_cat()
         {
             CShell shell = new CShell();
             shell.ChangeFolder(testFolder);
