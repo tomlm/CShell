@@ -1,21 +1,22 @@
 ﻿using Medallion.Shell;
-using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
 
-namespace CShellNet.BashStyle
+namespace CShellNet
 {
-    public static class BashStyleExtensions
+    /// <summary>
+    /// Adds lightweight methods to CShell which are "bash-like"
+    /// </summary>
+    public class BashShell : CShell
     {
         /// <summary>
         /// get current working directory
         /// </summary>
         /// <returns></returns>
-        public static string cwd(this CShell shell)
+        public string cwd()
         {
-            return shell.CurrentFolder.FullName;
+            return this.CurrentFolder.FullName;
         }
 
         /// <summary>
@@ -23,10 +24,10 @@ namespace CShellNet.BashStyle
         /// </summary>
         /// <param name="folderPath">absolute or relative path</param>
         /// <returns></returns>
-        public static CShell cd(this CShell shell, string folderPath)
+        public CShell cd(string folderPath)
         {
-            shell.ChangeFolder(folderPath);
-            return shell;
+            this.ChangeFolder(folderPath);
+            return this;
         }
 
         /// <summary>
@@ -34,10 +35,10 @@ namespace CShellNet.BashStyle
         /// </summary>
         /// <param name="folderPath">absolute or relative path</param>
         /// <returns></returns>
-        public static CShell chdir(this CShell shell, string folderPath)
+        public CShell chdir(string folderPath)
         {
-            shell.ChangeFolder(folderPath);
-            return shell;
+            this.ChangeFolder(folderPath);
+            return this;
         }
 
         /// <summary>
@@ -45,9 +46,9 @@ namespace CShellNet.BashStyle
         /// </summary>
         /// <param name="folderPath">absolute or relative path</param>
         /// <returns></returns>
-        public static CShell mkdir(this CShell shell, string folderPath)
+        public CShell mkdir(string folderPath)
         {
-            return shell.CreateFolder(folderPath);
+            return this.CreateFolder(folderPath);
         }
 
         /// <summary>
@@ -55,9 +56,9 @@ namespace CShellNet.BashStyle
         /// </summary>
         /// <param name="folderPath">absolute or relative path</param>
         /// <returns></returns>
-        public static CShell rmdir(this CShell shell, string folderPath, bool recursive = false)
+        public CShell rmdir(string folderPath, bool recursive = false)
         {
-            return shell.DeleteFolder(folderPath, recursive);
+            return this.DeleteFolder(folderPath, recursive);
         }
 
         /// <summary>
@@ -65,10 +66,10 @@ namespace CShellNet.BashStyle
         /// </summary>
         /// <param name="searchPattern"></param>
         /// <returns></returns>
-        public static IEnumerable<string> ls(this CShell shell, string searchPattern = null, bool recursive=false)
+        public IEnumerable<string> ls(string searchPattern = null, bool recursive = false)
         {
-            return shell.CurrentFolder.EnumerateFileSystemInfos(searchPattern ?? "*", (recursive) ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly)
-                .Select( fileInfo => fileInfo.FullName);
+            return this.CurrentFolder.EnumerateFileSystemInfos(searchPattern ?? "*", (recursive) ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly)
+                .Select(fileInfo => fileInfo.FullName);
         }
 
         /// <summary>
@@ -77,9 +78,9 @@ namespace CShellNet.BashStyle
         /// <param name="shell"></param>
         /// <param name="filePath">absolute or relative path</param>
         /// <returns></returns>
-        public static CShell rm(this CShell shell, string filePath)
+        public CShell rm(string filePath)
         {
-            return shell.DeleteFile(filePath);
+            return this.DeleteFile(filePath);
         }
 
         /// <summary>
@@ -88,9 +89,9 @@ namespace CShellNet.BashStyle
         /// <param name="shell"></param>
         /// <param name="filePath">absolute or relative path</param>
         /// <returns></returns>
-        public static Command cat(this CShell shell, string filePath)
+        public Command cat(string filePath)
         {
-            return shell.ReadFile(filePath);
+            return this.ReadFile(filePath);
         }
 
     }

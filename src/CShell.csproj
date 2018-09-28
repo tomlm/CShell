@@ -6,7 +6,7 @@
     <Authors>Tom Laird-McConnell</Authors>
     <Company></Company>
     <Product>CShell</Product>
-    <Description>CShell creates a runtime environment like a CMD or Bash shell does.  CShell is built on top of MedallionShell and runs great as a CSX on .NET Core giving you a great single file cross platform C# alternative to powershell and bash scripts.</Description>
+    <Description>CShell creates a shell like runtime environment to C# programs.  CShell is built on top of MedallionShell and creates a cross platform C# alternative to powershell and bash scripts.</Description>
     <Copyright>Tom Laird-McConnell 2018</Copyright>
     <PackageLicenseUrl>https://github.com/tomlm/CShell/blob/master/LICENSE</PackageLicenseUrl>
     <PackageProjectUrl>https://github.com/tomlm/CShell</PackageProjectUrl>
@@ -15,9 +15,9 @@
     <RepositoryType>git</RepositoryType>
     <PackageTags>scripting dotnet csharp</PackageTags>
     <PackageId>CShell</PackageId>
-    <AssemblyVersion>1.0.10.0</AssemblyVersion>
-    <FileVersion>1.0.10.0</FileVersion>
-    <Version>1.0.10</Version>
+    <AssemblyVersion>1.0.11.0</AssemblyVersion>
+    <FileVersion>1.0.11.0</FileVersion>
+    <Version>1.0.11</Version>
   </PropertyGroup>
 
   <ItemGroup>

@@ -1,5 +1,4 @@
 using CShellNet;
-using CShellNet.CmdStyle;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.IO;
@@ -7,7 +6,7 @@ using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 
-namespace CShellLibTests
+namespace CmdShellLibTests
 {
     [TestClass]
     public class CmdStyleTests
@@ -30,7 +29,7 @@ namespace CShellLibTests
         {
             Environment.CurrentDirectory = testFolder;
 
-            CShell shell = new CShell();
+            CmdShell shell = new CmdShell();
 
             shell.pushd("subfolder");
             Assert.AreEqual(subFolder, Environment.CurrentDirectory, "CurrentDirectory should be changed");
@@ -67,7 +66,7 @@ namespace CShellLibTests
         {
             Environment.CurrentDirectory = testFolder;
 
-            var shell = new CShell();
+            var shell = new CmdShell();
             shell.ChangeFolder(@"subfolder\subfolder2");
             Assert.AreEqual(subFolder2, shell.CurrentFolder.FullName, "currentFolder relative path failed");
             shell.ChangeFolder(@"..\subfolder2");
@@ -84,7 +83,7 @@ namespace CShellLibTests
         public void Test_md_rd()
         {
             Environment.CurrentDirectory = testFolder;
-            var shell = new CShell();
+            var shell = new CmdShell();
             string xyz = Path.Combine(testFolder, "xyz");
             if (Directory.Exists(xyz))
                 Directory.Delete(xyz);
@@ -100,7 +99,7 @@ namespace CShellLibTests
         public void Test_rd_recursive()
         {
             Environment.CurrentDirectory = testFolder;
-            var shell = new CShell();
+            var shell = new CmdShell();
             string xyz = Path.Combine(testFolder, "xyz");
             if (Directory.Exists(xyz))
                 Directory.Delete(xyz, true);
@@ -121,7 +120,7 @@ namespace CShellLibTests
         public void Test_dir()
         {
             Environment.CurrentDirectory = testFolder;
-            var shell = new CShell();
+            var shell = new CmdShell();
 
             Assert.IsTrue(shell.dir().Where(path => Path.GetFileName(path) == "TestA.txt").Any(), "missing TestA");
             Assert.IsTrue(shell.dir().Where(path => Path.GetFileName(path) == "TestB.txt").Any(), "missing TestB");
@@ -146,7 +145,7 @@ namespace CShellLibTests
         [TestMethod]
         public async Task Test_type()
         {
-            CShell shell = new CShell();
+            CmdShell shell = new CmdShell();
             shell.ChangeFolder(testFolder);
 
             var tmpOut = Path.GetTempFileName();

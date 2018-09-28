@@ -2,7 +2,8 @@
 
 # CShell
 CShell creates a runtime environment to make it easy to create C# based shell style scripts.
-CShell is built on top of MedallionShell and runs great as a CSX on .NET Core giving 
+
+CShell is built on using [MedallionShell](https://github.com/madelson/MedallionShell) and runs great using [dotnet-script](https://github.com/filipw/dotnet-script) (.csx) on .NET Core giving 
 you a great cross platform C# alternative to powershell and bash scripts.
 
 CShell provides:
@@ -76,9 +77,106 @@ to manipulate files.
 | **DeleteFile()** | Delete a file relative to current folder |
 | **FileExists()** | does a file relative to current folder exist                             |
 
-#### Windows CMD Style Extensions
-To make working with CShell familiar to windows CMD programmers there is a namespace CShellNet.CmdStyle which
-when you add it adds extension methods that look like CMD style methods.
+
+### CShell Process Commands
+CShell is built using [MedallionShell](https://github.com/madelson/MedallionShell), which provides a great set of functionality for easily invoking 
+processes and piping data between them.  CShell adds on location awareness and helper methods
+to make it even easier to work with the output of processes.
+
+To invoke a process you simply call .Run(). You can chain processes together using .PipeTo(), pipe '**|**' or greater than '**>**'.
+
+```CSharp
+class MyScript: CShell()
+{
+	async Task Go()
+	{
+		// Invoke multiple commands using fluent style
+		Command cmd1= await Run("cmd1", "args1")
+			.PipeTo("cmd2", "args2", "args3")
+			.PipeTo("cmd3", "args4");
+		CommandResult result1 = await cmd1.AsResult();
+
+
+		// we can even chain commands together with the pipe operator
+		Command cmd2 = await Run("cmd1", "args1") 
+			| Run("cmd2", "args2", "args3") 
+			| Run("cmd3", "args4");
+		CommandResult  result2 = await cmd2.AsResult();
+
+		// we can even chain commands together with the > operator
+		Command cmd3 = await Run("cmd1", "args1") 
+ 			> Run("cmd2", "args2", "args3")
+			> Run("cmd3", "args4");
+		CommandResult  result3 = await cmd3.AsResult();
+	}
+}
+```
+
+The CommandResult object has StandardOutput, StandardError information for further processing.
+
+
+#### Working with typed results
+Medallion makes it wasy to work with processes, but CShell adds on helper methods to make it even
+easier to work with the result of a command chain.
+
+| Method           | Description                                                                  |
+|------------------|------------------------------------------------------------------------------|
+| **AsResult()**   | get the CommandResult (with stdout/stderr) of the last command               |
+| **AsString()**   | get the standard out of the last command a string                            |
+| **AsJson()**     | JSON Deserialize the standard out of the last command into a JObject/dynamic |
+| **AsJson\<T>()** | JSON Deserialize the standard out of the last command into a typed T         |
+| **AsXml\<T>()**  | XML Deserialize the standard out of the last command intoa typed T           |
+| **AsFile()**     | Write the stdout/stderr  of the last command to a file                       |
+
+This allows you to change the previous example directly into a typed object in one command:
+
+```CSharp
+class MyScript: CShell()
+{
+	async Task Go()
+	{
+		// get the result as dynamic object
+		dynamic jsonResult  = await Run("cmd1", "args1")
+			.PipeTo("cmd2", "args2", "args3")
+			.PipeTo("cmd3", "args4")
+			.AsJson();
+
+		// get the json result as a typed object
+		MyObject myObject  = await Run("cmd1", "args1")
+			.PipeTo("cmd2", "args2", "args3")
+			.PipeTo("cmd3", "args4")
+			.AsJson<MyObject>();
+	}
+}
+```
+
+#### Working with files
+CShell has ReadFile() and AsFile() extension methods which allow you to "start" the
+process chain from a file, or to end with it in a file.
+
+| Method          | Description                                                                 |
+|-----------------|-----------------------------------------------------------------------------|
+| **.ReadFile()** | Read the file and use it as a Command that can be piped into other commands |
+| **.AsFile()**   | Write the stdout/stderr of the last command to a file                      |
+
+```CSharp
+class MyScript: CShell()
+{
+	async Task Go()
+	{
+		// start with text file and pass into cmd2, then write the final stdout and stderr and return a CommandResult
+		var result  = await ReadFile("myfile.txt")
+			.PipeTo("cmd2", "args2", "args3")
+			.PipeTo("cmd3", "args4")
+			.AsFile("stdout.txt", "stderr.txt");
+	}
+}
+```
+
+
+### CmdShell
+To make working with CShell familiar to windows CMD programmers there is a class called CmdShell which
+adds methods that look like CMD style methods.
 
 | Method       | Description                                                                                        |
 |--------------|----------------------------------------------------------------------------------------------------|
@@ -115,7 +213,7 @@ class MyScript: CShell()
 }
 ```
 
-#### Bash Style Extensions
+#### BashShell
 To make working with CShell familiar to OSX/Linux programmers there is a namespace CShellNet.BashStyle which
 when you add it adds extension methods that look like CMD style methods.
 
@@ -150,99 +248,3 @@ class MyScript: CShell()
 	}
 }
 ```
-
-### CShell Process Commands
-CShell is built using [MedallionShell](https://github.com/madelson/MedallionShell), which provides a great set of functionality for easily invoking 
-processes and piping data between them.  CShell adds on location awareness and helper methods
-to make it even easier to work with the output of processes.
-
-To invoke a process you simply call .Run(). You can chain processes together using .PipeTo(), pipe '**|**' or greater than '**>**'.
-
-```CSharp
-class MyScript: CShell()
-{
-	async Task Go()
-	{
-		// Invoke multiple commands using fluent style
-		CommandResult result3 = await Run("cmd1", "args1")
-			.PipeTo("cmd2", "args2", "args3")
-			.PipeTo("cmd3", "args4")
-			.AsResult();
-
-		// we can even chain commands together with the pipe operator
-		CommandResult result = await Run("cmd1", "args1") 
-			| Run("cmd2", "args2", "args3") 
-			| Run("cmd3", "args4")
-			.AsResult();
-
-		// we can even chain commands together with the > operator
-		CommandResult result2 = await Run("cmd1", "args1") 
- 			> Run("cmd2", "args2", "args3")
-			> Run("cmd3", "args4")
-			.AsResult();
-	}
-}
-```
-
-The CommandResult object has StandardOutput, StandardError information for further processing.
-
-
-#### Working with typed results
-Medallion makes it wasy to work with processes, but CShell adds on helper methods to make it even
-easier to work with the result of a command chain.
-
-| Method           | Description                                                                  |
-|------------------|------------------------------------------------------------------------------|
-| **AsResult()**   | get the CommandResult (with stdout/stderr) of the last command               |
-| **AsString()**   | get the standard out of the last command a string                            |
-| **AsJson()**     | JSON Deserialize the standard out of the last command into a JObject/dynamic |
-| **AsJson\<T>()** | JSON Deserialize the standard out of the last command into a typed T         |
-| **AsXml\<T>()**  | XML Deserialize the standard out of the last command intoa typed T           |
-| **AsFile()**     | Write the stdout/stderr  of the last command to a file                       |
-
-This allows you to change the previous example directly into a typed object in one command:
-
-```CSharp
-class MyScript: CShell()
-{
-	async Task Go()
-	{
-		// get the result as dynamic object
-		dynamic jsonResult  = await Run("cmd1", "args1")
-			.PipeTo("cmd2", "args2", "args3")
-			.PipeTo("cmd3", "args4")
-			.ToJson();
-
-		// get the json result as a typed object
-		MyObject myObject  = await Run("cmd1", "args1")
-			.PipeTo("cmd2", "args2", "args3")
-			.PipeTo("cmd3", "args4")
-			.ToJson<MyObject>();
-	}
-}
-```
-
-#### Working with files
-CShell has ReadFile() and AsFile() extension methods which allow you to "start" the
-process chain from a file, or to end with it in a file.
-
-| Method          | Description                                                                 |
-|-----------------|-----------------------------------------------------------------------------|
-| **.ReadFile()** | Read the file and use it as a Command that can be piped into other commands |
-| **.AsFile()**   | Write the stdout/stderr  of the last command to a file                      |
-
-```CSharp
-class MyScript: CShell()
-{
-	async Task Go()
-	{
-		// start with text file and pass into cmd2, then write the final stdout and stderr and return a CommandResult
-		var result  = await ReadFile("myfile.txt")
-			.PipeTo("cmd2", "args2", "args3")
-			.PipeTo("cmd3", "args4")
-			.AsFile("stdout.txt", "stderr.txt");
-	}
-}
-```
-
-

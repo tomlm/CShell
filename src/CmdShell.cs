@@ -3,17 +3,20 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
-namespace CShellNet.CmdStyle
+namespace CShellNet
 {
-    public static class CmdStyleExtensions
+    /// <summary>
+    /// Adds methods to CShell which are like CMD commands (cd, md, etc.)
+    /// </summary>
+    public class CmdShell : CShell
     {
         /// <summary>
         /// get current working directory
         /// </summary>
         /// <returns></returns>
-        public static string cd(this CShell shell)
+        public string cd()
         {
-            return shell.CurrentFolder.FullName;
+            return this.CurrentFolder.FullName;
         }
 
         /// <summary>
@@ -21,10 +24,10 @@ namespace CShellNet.CmdStyle
         /// </summary>
         /// <param name="folderPath">absolute or relative path to a folder</param>
         /// <returns></returns>
-        public static CShell cd(this CShell shell, string folderPath)
+        public CShell cd(string folderPath)
         {
-            shell.ChangeFolder(folderPath);
-            return shell;
+            this.ChangeFolder(folderPath);
+            return this;
         }
 
         /// <summary>
@@ -32,10 +35,10 @@ namespace CShellNet.CmdStyle
         /// </summary>
         /// <param name="folderPath">absolute or relative path to a folder</param>
         /// <returns></returns>
-        public static CShell chdir(this CShell shell, string folderPath)
+        public CShell chdir(string folderPath)
         {
-            shell.ChangeFolder(folderPath);
-            return shell;
+            this.ChangeFolder(folderPath);
+            return this;
         }
 
         /// <summary>
@@ -44,9 +47,9 @@ namespace CShellNet.CmdStyle
         /// <param name="sourcePath">absolute or relative path to a source file</param>
         /// <param name="targetPath">absolute or relative path to a target File</param>
         /// <returns></returns>
-        public static CShell copy(this CShell shell, string sourcePath, string targetPath, bool overwrite=false)
+        public CShell copy(string sourcePath, string targetPath, bool overwrite = false)
         {
-            return shell.CopyFile(sourcePath, targetPath, overwrite);
+            return this.CopyFile(sourcePath, targetPath, overwrite);
         }
 
         /// <summary>
@@ -55,9 +58,9 @@ namespace CShellNet.CmdStyle
         /// <param name="sourcePath">absolute or relative path to a source file</param>
         /// <param name="targetPath">absolute or relative path to a target File</param>
         /// <returns></returns>
-        public static CShell rename(this CShell shell, string sourcePath, string targetPath)
+        public CShell rename(string sourcePath, string targetPath)
         {
-            return shell.MoveFile(sourcePath, targetPath);
+            return this.MoveFile(sourcePath, targetPath);
         }
 
         /// <summary>
@@ -66,14 +69,18 @@ namespace CShellNet.CmdStyle
         /// <param name="sourcePath">absolute or relative path to a source file or folder</param>
         /// <param name="targetPath">absolute or relative path to a target file or folder</param>
         /// <returns></returns>
-        public static CShell move(this CShell shell, string sourcePath, string targetPath)
+        public CShell move(string sourcePath, string targetPath)
         {
-            sourcePath = shell.ResolvePath(sourcePath);
-            targetPath = shell.ResolvePath(targetPath);
+            sourcePath = this.ResolvePath(sourcePath);
+            targetPath = this.ResolvePath(targetPath);
             if (Directory.Exists(sourcePath))
-                return shell.MoveFolder(sourcePath, targetPath);
-            else 
-                return shell.MoveFile(sourcePath, targetPath);
+            {
+                return this.MoveFolder(sourcePath, targetPath);
+            }
+            else
+            {
+                return this.MoveFile(sourcePath, targetPath);
+            }
         }
 
         /// <summary>
@@ -81,9 +88,9 @@ namespace CShellNet.CmdStyle
         /// </summary>
         /// <param name="folderPath">absolute or relative path to a folder</param>
         /// <returns></returns>
-        public static CShell md(this CShell shell, string folderPath)
+        public CShell md(string folderPath)
         {
-            return shell.CreateFolder(folderPath);
+            return this.CreateFolder(folderPath);
         }
 
         /// <summary>
@@ -91,9 +98,9 @@ namespace CShellNet.CmdStyle
         /// </summary>
         /// <param name="folderPath">absolute or relative path to a folder</param>
         /// <returns></returns>
-        public static CShell mkdir(this CShell shell, string folderPath)
+        public CShell mkdir(string folderPath)
         {
-            return shell.CreateFolder(folderPath);
+            return this.CreateFolder(folderPath);
         }
 
         /// <summary>
@@ -101,9 +108,9 @@ namespace CShellNet.CmdStyle
         /// </summary>
         /// <param name="folderPath">absolute or relative path to a folder</param>
         /// <returns></returns>
-        public static CShell rd(this CShell shell, string folderPath, bool recursive = false)
+        public CShell rd(string folderPath, bool recursive = false)
         {
-            return shell.DeleteFolder(folderPath, recursive);
+            return this.DeleteFolder(folderPath, recursive);
         }
 
         /// <summary>
@@ -111,9 +118,9 @@ namespace CShellNet.CmdStyle
         /// </summary>
         /// <param name="folderPath">absolute or relative path to a folder</param>
         /// <returns></returns>
-        public static CShell rmdir(this CShell shell, string folderPath, bool recursive = false)
+        public CShell rmdir(string folderPath, bool recursive = false)
         {
-            return shell.DeleteFolder(folderPath, recursive);
+            return this.DeleteFolder(folderPath, recursive);
         }
 
         /// <summary>
@@ -121,9 +128,9 @@ namespace CShellNet.CmdStyle
         /// </summary>
         /// <param name="searchPattern"></param>
         /// <returns></returns>
-        public static IEnumerable<string> dir(this CShell shell, string searchPattern = null, bool recursive = false)
+        public IEnumerable<string> dir(string searchPattern = null, bool recursive = false)
         {
-            return shell.CurrentFolder.EnumerateFileSystemInfos(searchPattern ?? "*", (recursive) ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly)
+            return this.CurrentFolder.EnumerateFileSystemInfos(searchPattern ?? "*", (recursive) ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly)
                 .Select(fileInfo => fileInfo.Name);
         }
 
@@ -133,9 +140,9 @@ namespace CShellNet.CmdStyle
         /// <param name="shell"></param>
         /// <param name="folderPath">absolute or relative path to a folder</param>
         /// <returns></returns>
-        public static CShell pushd(this CShell shell, string folderPath)
+        public CShell pushd(string folderPath)
         {
-            return shell.PushFolder(folderPath);
+            return this.PushFolder(folderPath);
         }
 
         /// <summary>
@@ -143,9 +150,9 @@ namespace CShellNet.CmdStyle
         /// </summary>
         /// <param name="shell"></param>
         /// <returns></returns>
-        public static CShell popd(this CShell shell)
+        public CShell popd()
         {
-            return shell.PopFolder();
+            return this.PopFolder();
         }
 
         /// <summary>
@@ -154,9 +161,9 @@ namespace CShellNet.CmdStyle
         /// <param name="shell"></param>
         /// <param name="filePath">absolute or relative path to a file</param>
         /// <returns></returns>
-        public static Command type(this CShell shell, string filePath)
+        public Command type(string filePath)
         {
-            return shell.ReadFile(filePath);
+            return this.ReadFile(filePath);
         }
 
         /// <summary>
@@ -165,9 +172,9 @@ namespace CShellNet.CmdStyle
         /// <param name="shell"></param>
         /// <param name="filePath">absolute or relative path to a file</param>
         /// <returns></returns>
-        public static CShell delete(this CShell shell, string filePath)
+        public CShell delete(string filePath)
         {
-            return shell.DeleteFile(filePath);
+            return this.DeleteFile(filePath);
         }
 
         /// <summary>
@@ -176,9 +183,9 @@ namespace CShellNet.CmdStyle
         /// <param name="shell"></param>
         /// <param name="filePath">absolute or relative path to a file</param>
         /// <returns></returns>
-        public static CShell del(this CShell shell, string filePath)
+        public CShell del(string filePath)
         {
-            return shell.DeleteFile(filePath);
+            return this.DeleteFile(filePath);
         }
 
         /// <summary>
@@ -187,9 +194,9 @@ namespace CShellNet.CmdStyle
         /// <param name="shell"></param>
         /// <param name="filePath">absolute or relative path to a file</param>
         /// <returns></returns>
-        public static CShell erase(this CShell shell, string filePath)
+        public CShell erase(string filePath)
         {
-            return shell.DeleteFile(filePath);
+            return this.DeleteFile(filePath);
         }
     }
 }
