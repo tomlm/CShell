@@ -157,29 +157,29 @@ to make it even easier to work with the output of processes.
 To invoke a process you simply call .Run(). You can chain processes together using .PipeTo(), pipe '**|**' or greater than '**>**'.
 
 ```CSharp
-class MyScript: CShell()
+class MyScript: CShell
 {
-	async Task Go()
-	{
-		// Invoke multiple commands using fluent style
-		Command cmd1= await Run("cmd1", "args1")
-			.PipeTo("cmd2", "args2", "args3")
-			.PipeTo("cmd3", "args4");
-		CommandResult result1 = await cmd1.AsResult();
+  async Task Main(IList<string> args)
+  {
+    // Invoke multiple commands using fluent style
+    Command cmd1= await Run("cmd1", "args1")
+      .PipeTo("cmd2", "args2", "args3")
+      .PipeTo("cmd3", "args4");
+    CommandResult result1 = await cmd1.AsResult();
 
 
-		// we can even chain commands together with the pipe operator
-		Command cmd2 = await Run("cmd1", "args1") 
-			| Run("cmd2", "args2", "args3") 
-			| Run("cmd3", "args4");
-		CommandResult  result2 = await cmd2.AsResult();
+    // we can even chain commands together with the pipe operator
+    Command cmd2 = await Run("cmd1", "args1") 
+      | Run("cmd2", "args2", "args3") 
+      | Run("cmd3", "args4");
+    CommandResult  result2 = await cmd2.AsResult();
 
-		// we can even chain commands together with the > operator
-		Command cmd3 = await Run("cmd1", "args1") 
- 			> Run("cmd2", "args2", "args3")
-			> Run("cmd3", "args4");
-		CommandResult  result3 = await cmd3.AsResult();
-	}
+    // we can even chain commands together with the > operator
+    Command cmd3 = await Run("cmd1", "args1") 
+      > Run("cmd2", "args2", "args3")
+      > Run("cmd3", "args4");
+    CommandResult  result3 = await cmd3.AsResult();
+  }
 }
 ```
 
@@ -202,22 +202,22 @@ easier to work with the result of a command chain.
 This allows you to change the previous example directly into a typed object in one command:
 
 ```CSharp
-class MyScript: CShell()
+class MyScript: CShell
 {
-	async Task Go()
-	{
-		// get the result as dynamic object
-		dynamic jsonResult  = await Run("cmd1", "args1")
-			.PipeTo("cmd2", "args2", "args3")
-			.PipeTo("cmd3", "args4")
-			.AsJson();
+  async Task Main(IList<string> args)
+  {
+    // get the result as dynamic object
+    dynamic jsonResult  = await Run("cmd1", "args1")
+      .PipeTo("cmd2", "args2", "args3")
+      .PipeTo("cmd3", "args4")
+      .AsJson();
 
-		// get the json result as a typed object
-		MyObject myObject  = await Run("cmd1", "args1")
-			.PipeTo("cmd2", "args2", "args3")
-			.PipeTo("cmd3", "args4")
-			.AsJson<MyObject>();
-	}
+    // get the json result as a typed object
+    MyObject myObject  = await Run("cmd1", "args1")
+      .PipeTo("cmd2", "args2", "args3")
+      .PipeTo("cmd3", "args4")
+      .AsJson<MyObject>();
+  }
 }
 ```
 
@@ -231,16 +231,15 @@ process chain from a file, or to end with it in a file.
 | **.AsFile()**   | Write the stdout/stderr of the last command to a file                      |
 
 ```CSharp
-class MyScript: CShell()
+class MyScript: CShell
 {
-	async Task Go()
-	{
-		// start with text file and pass into cmd2, then write the final stdout and stderr and return a CommandResult
-		var result  = await ReadFile("myfile.txt")
-			.PipeTo("cmd2", "args2", "args3")
-			.PipeTo("cmd3", "args4")
-			.AsFile("stdout.txt", "stderr.txt");
-	}
+    async Task Main(IList<string> args)	{
+    // start with text file and pass into cmd2, then write the final stdout and stderr and return a CommandResult
+    var result  = await ReadFile("myfile.txt")
+        .PipeTo("cmd2", "args2", "args3")
+        .PipeTo("cmd3", "args4")
+        .AsFile("stdout.txt", "stderr.txt");
+    }
 }
 ```
 
@@ -269,18 +268,20 @@ using CShellNet.CmdStyle;
 
 class MyScript: CShell()
 {
-	async Task Go()
-	{
-		// cmd style
-		md("test");
-		cd("test");
-		foreach(var folder in CurrentFolder.EnumerateDirectories()) 
-		{
-			Console.WriteLine(folder.FullName);
-		}
-		cd("..");
-		rd("test");
-	}
+    async Task Go()
+    {
+        // cmd style
+        md("test");
+        cd("test");
+
+        foreach(var folder in CurrentFolder.EnumerateDirectories()) 
+        {
+            Console.WriteLine(folder.FullName);
+        }
+
+        cd("..");
+        rd("test");
+    }
 }
 ```
 
@@ -305,17 +306,17 @@ using CShellNet.CmdStyle;
 
 class MyScript: CShell()
 {
-	async Task Go()
-	{
-		// bash style
-		mkdir("test");
-		cd("test");
-		foreach(var folder in CurrentFolder.EnumerateDirectories()) 
-		{
-			Console.WriteLine(folder.FullName);
-		}
-		chdir("..");
-		rmdir("test");
-	}
+    async Task Go()
+    {
+        // bash style
+        mkdir("test");
+        cd("test");
+        foreach(var folder in CurrentFolder.EnumerateDirectories()) 
+        {
+            Console.WriteLine(folder.FullName);
+        }
+        chdir("..");
+        rmdir("test");
+    }
 }
 ```
