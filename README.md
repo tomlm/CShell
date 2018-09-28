@@ -17,7 +17,7 @@ By maintaining the concept of a current folder  all file and folder commands can
 You can just create a CShell directly and start working with it
 
 ```csharp
-#r "nuget: CShell, 1.0.11"
+#r "nuget: CShell, 1.1.0"
 #r "nuget: MedallionShell, 1.5.1"
 #r "nuget: Newtonsoft.Json, 11.0.2"
 
@@ -45,8 +45,8 @@ public async Task Main(IList<string> args)
         .AsString();
     Console.WriteLine(result);
 
-    shell.CreateFolder("test");
-    shell.ChangeFolder("test");
+    shell.md("test");
+    shell.cd("test");
     
     for (int i = 0; i < 100; i++)
     {
@@ -58,10 +58,9 @@ public async Task Main(IList<string> args)
     {
         file.Delete();
         Console.WriteLine($"Deleting: {file.FullName}");
-    }
 
-    shell.ChangeFolder("..");
-    shell.DeleteFolder("test");
+    shell.cd("..");
+    shell.rd("test");
 
     Console.WriteLine("All done");
 }
@@ -73,7 +72,7 @@ without a instance pointer, cleaning up your code:
 ```CSharp
 #r "nuget: Newtonsoft.Json, 11.0.2"
 #r "nuget: MedallionShell, 1.5.1"
-#r "nuget: CShell, 1.0.11"
+#r "nuget: CShell, 1.1.0"
 
 using CShellNet;
 using System.Threading.Tasks;
@@ -100,8 +99,8 @@ class MyScript : CShell
             .AsString();
         Console.WriteLine(result);
 
-        CreateFolder("test");
-        ChangeFolder("test");
+        md("test");
+        cd("test");
 
         for (int i = 0; i < 100; i++)
         {
@@ -115,8 +114,8 @@ class MyScript : CShell
             Console.WriteLine($"Deleting: {file.FullName}");
         }
 
-        ChangeFolder("..");
-        DeleteFolder("test");
+        cd("..");
+        rd("test");
         Console.WriteLine("All done");
     }
 }
@@ -136,27 +135,27 @@ most methods, so if you call **MoveFile(@"..\foo.txt", @"..\..\bar")** it will r
 CShell defines a number of methods which work relative to the current folder to make it easy
 to manipulate folders.
 
-| Method             | Description                                                                  |
-|--------------------|------------------------------------------------------------------------------|
-| **ChangeFolder()** | Change the current folder with relative or absolute path                     |
-| **CreateFolder()** | Create a folder relative to current folder                                   |
-| **CopyFolder()**   | copy a folder relative to current folder                                     |
-| **MoveFolder()**   | move a folder relative to current folder                                     |
-| **DeleteFolder()** | Delete a folder relative to current folder                                   |
-| **PushFolder()**   | Push the current folder onto the stack and change folder to the new one      |
-| **PopFolder()**    | Pop the current folder off the stack and change the folder the popped folder |
-| **FolderExists()** | does the relative folder to current folder exist                             |
+| Method      | Description                                                                  |
+|-------------|------------------------------------------------------------------------------|
+| **cd()**    | Change the current folder with relative or absolute path                     |
+| **md()**    | Create a folder relative to current folder                                   |
+| **rd()**    | Delete a folder relative to current folder                                   |
+| **pushd()** | Push the current folder onto the stack and change folder to the new one      |
+| **popd()**  | Pop the current folder off the stack and change the folder the popped folder |
 
 ### File Methods
 CShell defines a number of methods which work relative to the current folder to make it easy
 to manipulate files.
 
-| Method           | Description                              |
-|------------------|------------------------------------------|
-| **CopyFile()**   | Copy a file relative to current folder   |
-| **MoveFile()**   | Move a file relative to current folder   |
-| **DeleteFile()** | Delete a file relative to current folder |
-| **FileExists()** | does a file relative to current folder exist                             |
+| Method       | Description                                  |
+|--------------|----------------------------------------------|
+| **copy()**   | Copy a file relative to current folder       |
+| **move()**   | Move a file relative to current folder       |
+| **rename()** | Move a file relative to current folder       |
+| **delete()** | Delete a file relative to current folder     |
+| **erase()**  | does a file relative to current folder exist |
+| **type()**   | type a file to standardout                   |
+| **cat()**    | cat a file to standardout                    |
 
 
 ### Process Methods
@@ -238,7 +237,7 @@ process chain from a file, or to end with it in a file.
 | Method          | Description                                                                 |
 |-----------------|-----------------------------------------------------------------------------|
 | **.ReadFile()** | Read the file and use it as a Command that can be piped into other commands |
-| **.AsFile()**   | Write the stdout/stderr of the last command to a file                      |
+| **.AsFile()**   | Write the stdout/stderr of the last command to a file                       |
 
 ```CSharp
 class MyScript: CShell
@@ -254,81 +253,3 @@ class MyScript: CShell
 ```
 
 
-### Custom - CmdShell 
-To make working with CShell familiar to windows CMD programmers there is a class called CmdShell which
-adds methods that look like CMD style commands.
-
-| Method       | Description                                                                                        |
-|--------------|----------------------------------------------------------------------------------------------------|
-| **cd()**     | Change the current folder with relative or absolute path                                           |
-| **chdir()**  | Change the current folder with relative or absolute path                                           |
-| **md()**     | Create a folder relative to current folder                                                         |
-| **mkdir()**  | Create a folder relative to current folder                                                         |
-| **rd()**     | Delete a folder relative to current folder                                                         |
-| **rmdir()**  | Delete a folder relative to current folder                                                         |
-| **erase()**  | Delete a file relative to current folder                                                           |
-| **del()**    | Delete a file relative to current folder                                                           |
-| **delete()** | Delete a file relative to current folder                                                           |
-| **pushd()**  | Push the current folder onto the stack and change folder to the new one                            |
-| **popd()**   | Pop the current folder off the stack and change the folder the popped folder                       |
-| **type()**   | TYPE equivelant create a file command which can be piped to other commands  *(maps to ReadFile())* |
-
-```CSharp
-using CShellNet.CmdStyle;
-
-class MyScript: CShell
-{
-    async Task Go()
-    {
-        // cmd style
-        md("test");
-        cd("test");
-
-        foreach(var folder in CurrentFolder.EnumerateDirectories()) 
-        {
-            Console.WriteLine(folder.FullName);
-        }
-
-        cd("..");
-        rd("test");
-    }
-}
-```
-
-#### Custom - BashShell
-To make working with CShell familiar to OSX/Linux programmers there is a class **BashShell** which
-adds methods which look like Bash style commands.
-
-| Method       | Description                                                                                        |
-|--------------|----------------------------------------------------------------------------------------------------|
-| **cwd()**    | get current working directory path                                                                 |
-| **cd()**     | Change the current folder with relative or absolute path                                           |
-| **chdir()**  | Change the current folder with relative or absolute path                                           |
-| **mkdir()**  | Create a folder relative to current folder                                                         |
-| **rmdir()**  | Delete a folder relative to current folder                                                         |
-| **erase()**  | Delete a file relative to current folder                                                           |
-| **del()**    | Delete a file relative to current folder                                                           |
-| **delete()** | Delete a file relative to current folder                                                           |
-| **cat()**    | cat cmd equivelant create a file command which can be piped to other commands *(maps to ReadFile)* |
-
-```CSharp
-using CShellNet.CmdStyle;
-
-class MyScript: CShell
-{
-    async Task Go()
-    {
-        // bash style
-        mkdir("test");
-        cd("test");
-        
-        foreach(var folder in CurrentFolder.EnumerateDirectories()) 
-        {
-            Console.WriteLine(folder.FullName);
-        }
-        
-        chdir("..");
-        rmdir("test");
-    }
-}
-```

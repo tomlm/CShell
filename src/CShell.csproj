@@ -15,9 +15,9 @@
     <RepositoryType>git</RepositoryType>
     <PackageTags>scripting dotnet csharp</PackageTags>
     <PackageId>CShell</PackageId>
-    <AssemblyVersion>1.0.11.0</AssemblyVersion>
+    <AssemblyVersion>1.1.0.0</AssemblyVersion>
     <FileVersion>1.0.11.0</FileVersion>
-    <Version>1.0.11</Version>
+    <Version>1.1.0</Version>
   </PropertyGroup>
 
   <ItemGroup>

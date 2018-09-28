@@ -89,45 +89,218 @@ namespace CShellNet
         /// </summary>
         /// <param name="folderPath">absolute or relative path to a folder</param>
         /// <returns></returns>
-        public CShell ChangeFolder(string folderPath)
+        public CShell cd(string folderPath)
         {
             this.CurrentFolder = new DirectoryInfo(ResolvePath(folderPath));
             return this;
         }
 
         /// <summary>
-        /// Does folder exist
+        /// get current working directory
         /// </summary>
-        /// <param name="folderPath">absolute or relative path to a folder</param>
         /// <returns></returns>
-        public bool FolderExists(string folderPath)
+        public string cd()
         {
-            return Directory.Exists(ResolvePath(folderPath));
+            return this.CurrentFolder.FullName;
         }
 
         /// <summary>
-        /// Does file exist
+        /// change current working directory
         /// </summary>
         /// <param name="folderPath">absolute or relative path to a folder</param>
         /// <returns></returns>
-        public bool FileExists(string folderPath)
+        public CShell chdir(string folderPath)
         {
-            return File.Exists(ResolvePath(folderPath));
-        }
-
-        /// <summary>
-        /// Create Folder
-        /// </summary>
-        /// <param name="folderPath">absolute or relative path to a folder</param>
-        /// <returns></returns>
-        public CShell CreateFolder(string folderPath)
-        {
-            folderPath = ResolvePath(folderPath);
-            if (!Directory.Exists(folderPath))
-            {
-                Directory.CreateDirectory(folderPath);
-            }
+            this.cd(folderPath);
             return this;
+        }
+
+        /// <summary>
+        /// copy file or folder 
+        /// </summary>
+        /// <param name="sourcePath">absolute or relative path to a source file or folder</param>
+        /// <param name="targetPath">absolute or relative path to a target File or folder</param>
+        /// <returns></returns>
+        public CShell copy(string sourcePath, string targetPath, bool overwrite = false, bool recursive=false)
+        {
+            if (Directory.Exists(sourcePath))
+            {
+                return CopyFolder(sourcePath, targetPath, recursive);
+            }
+
+            if (Directory.Exists(targetPath))
+                targetPath = Path.Combine(targetPath, Path.GetFileName(sourcePath));
+            File.Copy(sourcePath, targetPath, overwrite);
+            return this;
+        }
+
+        /// <summary>
+        /// rename file
+        /// </summary>
+        /// <param name="sourcePath">absolute or relative path to a source file</param>
+        /// <param name="targetPath">absolute or relative path to a target File</param>
+        /// <returns></returns>
+        public CShell rename(string sourcePath, string targetPath)
+        {
+            return move(sourcePath, targetPath);
+        }
+
+        /// <summary>
+        /// move file or folder
+        /// </summary>
+        /// <param name="sourcePath">absolute or relative path to a source file or folder</param>
+        /// <param name="targetPath">absolute or relative path to a target file or folder</param>
+        /// <returns></returns>
+        public CShell move(string sourcePath, string targetPath)
+        {
+            sourcePath = this.ResolvePath(sourcePath);
+            targetPath = this.ResolvePath(targetPath);
+            if (Directory.Exists(sourcePath))
+            {
+                Directory.Move(sourcePath, targetPath);
+                return this;
+            }
+            else
+            {
+                if (Directory.Exists(targetPath))
+                    targetPath = Path.Combine(targetPath, Path.GetFileName(sourcePath));
+                File.Move(sourcePath, targetPath);
+                return this;
+            }
+        }
+
+        /// <summary>
+        /// Make directory
+        /// </summary>
+        /// <param name="folderPath">absolute or relative path to a folder</param>
+        /// <returns></returns>
+        public CShell md(string folderPath)
+        {
+            Directory.CreateDirectory(folderPath);
+            return this;
+        }
+
+        /// <summary>
+        /// Make directory
+        /// </summary>
+        /// <param name="folderPath">absolute or relative path to a folder</param>
+        /// <returns></returns>
+        public CShell mkdir(string folderPath)
+        {
+            Directory.CreateDirectory(folderPath);
+            return this;
+        }
+
+        /// <summary>
+        /// remove directory
+        /// </summary>
+        /// <param name="folderPath">absolute or relative path to a folder</param>
+        /// <returns></returns>
+        public CShell rd(string folderPath, bool recursive = false)
+        {
+            Directory.Delete(folderPath, recursive);
+            return this;
+        }
+
+        /// <summary>
+        /// remove directory
+        /// </summary>
+        /// <param name="folderPath">absolute or relative path to a folder</param>
+        /// <returns></returns>
+        public CShell rmdir(string folderPath, bool recursive = false)
+        {
+            Directory.Delete(folderPath, recursive);
+            return this;
+        }
+
+        /// <summary>
+        /// do a dir in the current folder
+        /// </summary>
+        /// <param name="searchPattern"></param>
+        /// <returns></returns>
+        public IEnumerable<string> dir(string searchPattern = null, bool recursive = false)
+        {
+            return this.CurrentFolder.EnumerateFileSystemInfos(searchPattern ?? "*", (recursive) ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly)
+                .Select(fileInfo => fileInfo.Name);
+        }
+
+        /// <summary>
+        /// push folder
+        /// </summary>
+        /// <param name="shell"></param>
+        /// <param name="folderPath">absolute or relative path to a folder</param>
+        /// <returns></returns>
+        public CShell pushd(string folderPath)
+        {
+            return this.PushFolder(folderPath);
+        }
+
+        /// <summary>
+        /// pop folder
+        /// </summary>
+        /// <param name="shell"></param>
+        /// <returns></returns>
+        public CShell popd()
+        {
+            return this.PopFolder();
+        }
+
+        /// <summary>
+        /// type a file to stdout suitable for piping
+        /// </summary>
+        /// <param name="shell"></param>
+        /// <param name="filePath">absolute or relative path to a file</param>
+        /// <returns></returns>
+        public Command type(string filePath)
+        {
+            return this.ReadFile(filePath);
+        }
+
+        /// <summary>
+        /// delete a file
+        /// </summary>
+        /// <param name="shell"></param>
+        /// <param name="filePath">absolute or relative path to a file</param>
+        /// <returns></returns>
+        public CShell delete(string filePath)
+        {
+            File.Delete(filePath);
+            return this;
+        }
+
+        /// <summary>
+        /// delete a file
+        /// </summary>
+        /// <param name="shell"></param>
+        /// <param name="filePath">absolute or relative path to a file</param>
+        /// <returns></returns>
+        public CShell del(string filePath)
+        {
+            File.Delete(filePath);
+            return this;
+        }
+
+        /// <summary>
+        /// delete a file
+        /// </summary>
+        /// <param name="shell"></param>
+        /// <param name="filePath">absolute or relative path to a file</param>
+        /// <returns></returns>
+        public CShell erase(string filePath)
+        {
+            File.Delete(filePath);
+            return this;
+        }
+
+        /// <summary>
+        /// Cat a file to stdout
+        /// </summary>
+        /// <param name="shell"></param>
+        /// <param name="filePath">absolute or relative path</param>
+        /// <returns></returns>
+        public Command cat(string filePath)
+        {
+            return this.ReadFile(filePath);
         }
 
         /// <summary>
@@ -137,7 +310,7 @@ namespace CShellNet
         /// <param name="targetFolderPath">absolute or relative path to a target folder</param>
         /// <param name="recursive"></param>
         /// <returns></returns>
-        public CShell CopyFolder(string sourceFolderPath, string targetFolderPath, bool recursive = false)
+        public CShell CopyFolder(string sourceFolderPath, string targetFolderPath, bool recursive = true)
         {
             var sourcePath = ResolvePath(sourceFolderPath);
             var targetPath = ResolvePath(targetFolderPath);
@@ -169,33 +342,6 @@ namespace CShellNet
         }
 
         /// <summary>
-        /// Move a Folder 
-        /// </summary>
-        /// <param name="sourceFolderPath">absolute or relative path to a source folder</param>
-        /// <param name="targetFolderPath">absolute or relative path to a target folder</param>
-        /// <returns></returns>
-        public CShell MoveFolder(string sourceFolderPath, string targetFolderPath)
-        {
-            var sourcePath = ResolvePath(sourceFolderPath);
-            var targetPath = ResolvePath(targetFolderPath);
-            Directory.Move(sourcePath, targetPath);
-            return this;
-        }
-
-        /// <summary>
-        /// delete a Folder 
-        /// </summary>
-        /// <param name="folderPath">absolute or relative path to a folder</param>
-        /// <param name="recursive"></param>
-        /// <returns></returns>
-        public CShell DeleteFolder(string folderPath, bool recursive = false)
-        {
-            folderPath = ResolvePath(folderPath);
-            Directory.Delete(folderPath, recursive);
-            return this;
-        }
-
-        /// <summary>
         /// Change to a folder and add it to the stack
         /// </summary>
         /// <param name="folderPath">absolute or relative path to a folder</param>
@@ -203,7 +349,7 @@ namespace CShellNet
         public CShell PushFolder(string folderPath)
         {
             var oldFolder = this.CurrentFolder;
-            ChangeFolder(folderPath);
+            cd(folderPath);
             this.FolderStack.Push(oldFolder.FullName);
             return this;
         }
@@ -215,50 +361,6 @@ namespace CShellNet
         public CShell PopFolder()
         {
             this.CurrentFolder = new DirectoryInfo(this.FolderStack.Pop());
-            return this;
-        }
-
-        /// <summary>
-        /// copy a file to a file relative to current folder
-        /// </summary>
-        /// <param name="sourceFilePath">absolute or relative path source file</param>
-        /// <param name="targetFilePath">absolute or relative path target file</param>
-        /// <returns></returns>
-        public CShell CopyFile(string sourceFilePath, string targetFilePath, bool overwrite = false)
-        {
-            var sourcePath = ResolvePath(sourceFilePath);
-            var targetPath = ResolvePath(targetFilePath);
-            if (Directory.Exists(targetPath))
-                targetPath = Path.Combine(targetPath, Path.GetFileName(sourcePath));
-            File.Copy(sourcePath, targetPath, overwrite);
-            return this;
-        }
-
-        /// <summary>
-        /// move a file to a file relative to current folder
-        /// </summary>
-        /// <param name="sourceFilePath">absolute or relative path source file</param>
-        /// <param name="targetFilePath">absolute or relative path target file</param>
-        /// <returns></returns>
-        public CShell MoveFile(string sourceFilePath, string targetFilePath)
-        {
-            var sourcePath = ResolvePath(sourceFilePath);
-            var targetPath = ResolvePath(targetFilePath);
-            if (Directory.Exists(targetPath))
-                targetPath = Path.Combine(targetPath, Path.GetFileName(sourcePath));
-            File.Move(sourcePath, targetPath);
-            return this;
-        }
-
-        /// <summary>
-        /// Delete a file relative to current folder
-        /// </summary>
-        /// <param name="filePath">absolute or relative path to file</param>
-        /// <returns></returns>
-        public CShell DeleteFile(string filePath)
-        {
-            var path = ResolvePath(filePath);
-            File.Delete(path);
             return this;
         }
 
