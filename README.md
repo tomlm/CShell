@@ -34,9 +34,14 @@ public async Task Main(IList<string> args)
     {
         Console.WriteLine($"{arg}");
     }
+    
+    StringBuilder sb = new StringBuilder();
+    sb.AppendLine("Test");
+    sb.AppendLine("yo");
+    sb.AppendLine("test3");
 
-    var result = await shell.Run("findstr", "yo")
-        .RedirectFrom("test\ntest2\nyo\ntest3")
+    var result = await Run("findstr", "/N", "yo")
+        .RedirectFrom(sb.ToString())
         .AsString();
     Console.WriteLine(result);
 
@@ -55,7 +60,7 @@ public async Task Main(IList<string> args)
         Console.WriteLine($"Deleting: {file.FullName}");
     }
 
-    shell.CreateFolder("..");
+    shell.ChangeFolder("..");
     shell.DeleteFolder("test");
 
     Console.WriteLine("All done");
@@ -85,9 +90,14 @@ class MyScript : CShell
             Console.WriteLine($"{arg}");
         }
 
-        var result = await Run("findstr", "yo")
-             .RedirectFrom("test\ntest2\nyo\ntest3")
-              .AsString();
+        StringBuilder sb = new StringBuilder();
+        sb.AppendLine("Test");
+        sb.AppendLine("yo");
+        sb.AppendLine("test3");
+
+        var result = await Run("findstr", "/N", "yo")
+            .RedirectFrom(sb.ToString())
+            .AsString();
         Console.WriteLine(result);
 
         CreateFolder("test");
