@@ -246,7 +246,7 @@ class MyScript: CShell
 
 ### Custom - CmdShell 
 To make working with CShell familiar to windows CMD programmers there is a class called CmdShell which
-adds methods that look like CMD style methods.
+adds methods that look like CMD style commands.
 
 | Method       | Description                                                                                        |
 |--------------|----------------------------------------------------------------------------------------------------|
@@ -286,8 +286,8 @@ class MyScript: CShell()
 ```
 
 #### Custom - BashShell
-To make working with CShell familiar to OSX/Linux programmers there is a namespace CShellNet.BashStyle which
-when you add it adds extension methods that look like CMD style methods.
+To make working with CShell familiar to OSX/Linux programmers there is a class **BashShell** which
+adds methods which look like Bash style commands.
 
 | Method       | Description                                                                                        |
 |--------------|----------------------------------------------------------------------------------------------------|
@@ -311,10 +311,12 @@ class MyScript: CShell()
         // bash style
         mkdir("test");
         cd("test");
+        
         foreach(var folder in CurrentFolder.EnumerateDirectories()) 
         {
             Console.WriteLine(folder.FullName);
         }
+        
         chdir("..");
         rmdir("test");
     }
