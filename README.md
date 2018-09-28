@@ -38,6 +38,7 @@ public async Task Main(IList<string> args)
     var result = await shell.Run("findstr", "yo")
         .RedirectFrom("test\ntest2\nyo\ntest3")
         .AsString();
+    Console.WriteLine(result);
 
     shell.CreateFolder("test");
     shell.ChangeFolder("test");
@@ -61,7 +62,8 @@ public async Task Main(IList<string> args)
 }
 ```
 
-If you don't want to have the *shell.* prefix, you can derive from it like this:
+If you don't want to have the *shell.* instance prefix, you can derive from CShell and have access to the methods
+without a instance pointer, cleaning up your code:
 
 ```CSharp
 #r "nuget: Newtonsoft.Json, 11.0.2"
@@ -82,6 +84,11 @@ class MyScript : CShell
         {
             Console.WriteLine($"{arg}");
         }
+
+		var result = await Run("findstr", "yo")
+			.RedirectFrom("test\ntest2\nyo\ntest3")
+			.AsString();
+		Console.WriteLine(result);
 
         CreateFolder("test");
         ChangeFolder("test");
