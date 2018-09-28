@@ -276,7 +276,7 @@ adds methods that look like CMD style commands.
 ```CSharp
 using CShellNet.CmdStyle;
 
-class MyScript: CShell()
+class MyScript: CShell
 {
     async Task Go()
     {
@@ -314,7 +314,7 @@ adds methods which look like Bash style commands.
 ```CSharp
 using CShellNet.CmdStyle;
 
-class MyScript: CShell()
+class MyScript: CShell
 {
     async Task Go()
     {
