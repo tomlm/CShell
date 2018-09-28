@@ -3,7 +3,7 @@
 # CShell
 CShell creates a runtime environment to make it easy to create C# based shell style scripts.
 
-CShell is built on using [MedallionShell](https://github.com/madelson/MedallionShell) and runs great using [dotnet-script](https://github.com/filipw/dotnet-script) (.csx) on .NET Core giving 
+CShell is built using [MedallionShell](https://github.com/madelson/MedallionShell) and runs great using [dotnet-script](https://github.com/filipw/dotnet-script) (.csx) giving 
 you a great cross platform C# alternative to powershell and bash scripts.
 
 CShell provides:
@@ -11,8 +11,8 @@ CShell provides:
 * The ability to smoothly invoke processes and pipe 
 * Helpers to make it easy to work with the output of processes
 
-By maintaining the concept of a current folder then all file and folder commands can be expressed
-using relative paths just like a normal shell.
+By maintaining the concept of a current folder  all file and folder commands can be take absolute or 
+ relative paths just like a normal shell.
 
 You can just create a CShell directly and start working with it
 
@@ -67,7 +67,7 @@ public async Task Main(IList<string> args)
 }
 ```
 
-If you don't want to have the *shell.* instance prefix, you can derive from CShell and have access to the methods
+If you don't want to have the *shell.* instance prefix, you can derive from CShell and have use the methods
 without a instance pointer, cleaning up your code:
 
 ```CSharp
