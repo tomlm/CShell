@@ -15,30 +15,49 @@ By maintaining the concept of a current folder then all file and folder commands
 using relative paths just like a normal shell.
 
 You can just create a CShell directly and start working with it
+
 ```csharp
-var shell = new CShell();
+#r "nuget: CShell, 1.0.11"
+#r "nuget: MedallionShell, 1.5.1"
+#r "nuget: Newtonsoft.Json, 11.0.2"
 
-shell.CreateFolder("test");
-shell.ChangeFolder("test");
-foreach(var folder in shell.CurrentFolder.EnumerateDirectories()) 
-{
-	Console.WriteLine(folder.FullName);
-}
-```
+using CShellNet;
+using Medallion.Shell;
 
-Or you can derive a class and not need the shell. prefix at all
-```CSharp
-class MyScript: CShell()
+Main(Args).Wait();
+
+public async Task Main(IList<string> args)
 {
-	async Task Go()
-	{
-		CreateFolder("test");
-		ChangeFolder("test");
-		foreach(var folder in shell.CurrentFolder.EnumerateDirectories()) 
-		{
-			Console.WriteLine(folder.FullName);
-		}
-	}
+    var shell = new CShell();
+    
+    foreach(var arg in args)
+    {
+        Console.WriteLine($"{arg}");
+    }
+
+    var result = await shell.Run("findstr", "yo")
+        .RedirectFrom("test\ntest2\nyo\ntest3")
+        .AsString();
+
+    shell.CreateFolder("test");
+    shell.ChangeFolder("test");
+    
+    for (int i = 0; i < 100; i++)
+    {
+        await File.WriteAllTextAsync(i.ToString(), i.ToString());
+        Console.WriteLine($"Creating: {i}");
+    }
+
+    foreach (var file in shell.CurrentFolder.GetFiles())
+    {
+        file.Delete();
+        Console.WriteLine($"Deleting: {file.FullName}");
+    }
+
+    shell.CreateFolder("..");
+    shell.DeleteFolder("test");
+
+    Console.WriteLine("All done");
 }
 ```
 
