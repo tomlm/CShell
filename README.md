@@ -61,8 +61,53 @@ public async Task Main(IList<string> args)
 }
 ```
 
-### CShell Properties
-CShell exposes 3 properties which are essentially the working environment of your script.
+If you don't want to have the *shell.* prefix, you can derive from it like this:
+
+```CSharp
+#r "nuget: Newtonsoft.Json, 11.0.2"
+#r "nuget: MedallionShell, 1.5.1"
+#r "nuget: CShell, 1.0.11"
+
+using CShellNet;
+using System.Threading.Tasks;
+using Medallion.Shell;
+
+new MyScript ().Main(Args).Wait();
+
+class MyScript : CShell
+{
+    public async Task Main(IList<string> args)
+    {
+        foreach (var arg in args)
+        {
+            Console.WriteLine($"{arg}");
+        }
+
+        CreateFolder("test");
+        ChangeFolder("test");
+
+        for (int i = 0; i < 100; i++)
+        {
+            await File.WriteAllTextAsync(i.ToString(), i.ToString());
+            Console.WriteLine($"Creating: {i}");
+        }
+
+        foreach (var file in this.CurrentFolder.GetFiles())
+        {
+            file.Delete();
+            Console.WriteLine($"Deleting: {file.FullName}");
+        }
+
+        ChangeFolder("..");
+        DeleteFolder("test");
+        Console.WriteLine("All done");
+    }
+}
+```
+
+### Properties
+CShell exposes 3 properties which are the working environment of your script.  The CurrentFolder is used to resolve relative paths for
+most methods, so if you call **MoveFile(@"..\foo.txt", @"..\..\bar")** it will resolve the paths and execute just like a normal shell.
 
 | Property          | Description                                  |
 |-------------------|----------------------------------------------|
@@ -70,7 +115,7 @@ CShell exposes 3 properties which are essentially the working environment of you
 | **FolderHistory** | List of folder paths you have navigated to   |
 | **FolderStack**   | current stack from Push/Pop operations       |
 
-### CShell Folder Commands
+### Folder Methods
 CShell defines a number of methods which work relative to the current folder to make it easy
 to manipulate folders.
 
@@ -83,9 +128,9 @@ to manipulate folders.
 | **DeleteFolder()** | Delete a folder relative to current folder                                   |
 | **PushFolder()**   | Push the current folder onto the stack and change folder to the new one      |
 | **PopFolder()**    | Pop the current folder off the stack and change the folder the popped folder |
-| **FolderExists()** | does the folder relative to current folder exist                             |
+| **FolderExists()** | does the relative folder to current folder exist                             |
 
-### CShell File Commands
+### File Methods
 CShell defines a number of methods which work relative to the current folder to make it easy
 to manipulate files.
 
@@ -97,7 +142,7 @@ to manipulate files.
 | **FileExists()** | does a file relative to current folder exist                             |
 
 
-### CShell Process Commands
+### Process Methods
 CShell is built using [MedallionShell](https://github.com/madelson/MedallionShell), which provides a great set of functionality for easily invoking 
 processes and piping data between them.  CShell adds on location awareness and helper methods
 to make it even easier to work with the output of processes.
@@ -193,7 +238,7 @@ class MyScript: CShell()
 ```
 
 
-### CmdShell
+### Custom - CmdShell 
 To make working with CShell familiar to windows CMD programmers there is a class called CmdShell which
 adds methods that look like CMD style methods.
 
@@ -232,7 +277,7 @@ class MyScript: CShell()
 }
 ```
 
-#### BashShell
+#### Custom - BashShell
 To make working with CShell familiar to OSX/Linux programmers there is a namespace CShellNet.BashStyle which
 when you add it adds extension methods that look like CMD style methods.
 
