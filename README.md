@@ -85,10 +85,10 @@ class MyScript : CShell
             Console.WriteLine($"{arg}");
         }
 
-		var result = await Run("findstr", "yo")
-			.RedirectFrom("test\ntest2\nyo\ntest3")
-			.AsString();
-		Console.WriteLine(result);
+        var result = await Run("findstr", "yo")
+             .RedirectFrom("test\ntest2\nyo\ntest3")
+              .AsString();
+        Console.WriteLine(result);
 
         CreateFolder("test");
         ChangeFolder("test");
