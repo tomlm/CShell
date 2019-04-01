@@ -3,6 +3,7 @@
 # CShell
 CShell creates a runtime environment to make it easy to create C# based shell style scripts.
 
+# Description
 CShell is built using [MedallionShell](https://github.com/madelson/MedallionShell) and runs great using [dotnet-script](https://github.com/filipw/dotnet-script) (.csx) giving 
 you a great cross platform C# alternative to powershell and bash scripts.
 
@@ -253,3 +254,20 @@ class MyScript: CShell
 ```
 
 
+## CShell + dotnet-script == awesome
+CShell is  a dotnet library which can be used in any .net program, but it is super useful to use from a dotnet-script (.csx) file.
+There is a dotnet template to make it super easy to create a .csx file with CShell all set up to use.
+
+To install dotnet-script support
+
+```dotnet tool install -g dotnet-script```
+
+To install the csx template
+
+```dotnet new --install CShell.Template```
+
+To invoke the template
+
+``` dotnet new cshell ``
+
+> NOTE: If you want debug support from visual studio code simply run **dotnet script init** in the same folder.
