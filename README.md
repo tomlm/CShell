@@ -260,14 +260,14 @@ There is a dotnet template to make it super easy to create a .csx file with CShe
 
 To install dotnet-script support
 
-```dotnet tool install -g dotnet-script```
+**```dotnet tool install -g dotnet-script```**
 
 To install the csx template
 
-```dotnet new --install CShell.Template```
+**```dotnet new --install CShell.Template```**
 
 To invoke the template
 
-``` dotnet new cshell ``
+**``` dotnet new cshell ```**
 
 > NOTE: If you want debug support from visual studio code simply run **dotnet script init** in the same folder.
