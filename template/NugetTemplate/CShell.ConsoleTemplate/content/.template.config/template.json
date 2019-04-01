@@ -1,0 +1,15 @@
+{
+    "$schema": "http://json.schemastore.org/template",
+    "author": "Tom Laird-McConnell",
+    "classifications": [
+        "Common",
+        "Console"
+    ],
+    "identity": "CShell.Template",
+    "name": "CShell script template",
+    "shortName": "cshell",
+    "tags": {
+        "language": "C#",
+        "type": "item"
+    }
+}
