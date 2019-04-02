@@ -277,7 +277,7 @@ class MyScript : CShell
 You can register dotnet-script as the default handler for .csx files by running these commands:
 ```cmd
 reg add HKCU\Software\classes\.csx /f /ve /t REG_SZ /d dotnetscript
-reg add HKCU\Software\Classes\dotnetscript\Shell\Open\Command /f /ve /t REG_EXPAND_SZ /d "\"%ProgramFiles%\dotnet\dotnet.exe\" script \"%%1\" -- %*"
+reg add HKCU\Software\Classes\dotnetscript\Shell\Open\Command /f /ve /t REG_EXPAND_SZ /d "\"%ProgramFiles%\dotnet\dotnet.exe\" script \"%1\" -- %*"
 ```
 
 After registering you can simple type **your.csx** to execute your cshell program.
