@@ -15,113 +15,6 @@ CShell provides:
 By maintaining the concept of a current folder  all file and folder commands can be take absolute or 
  relative paths just like a normal shell.
 
-You can just create a CShell directly and start working with it
-
-```csharp
-#r "nuget: CShell, 1.1.0"
-#r "nuget: MedallionShell, 1.5.1"
-#r "nuget: Newtonsoft.Json, 11.0.2"
-
-using CShellNet;
-using Medallion.Shell;
-
-Main(Args).Wait();
-
-public async Task Main(IList<string> args)
-{
-    var shell = new CShell();
-    
-    foreach(var arg in args)
-    {
-        Console.WriteLine($"{arg}");
-    }
-    
-    StringBuilder sb = new StringBuilder();
-    sb.AppendLine("Test");
-    sb.AppendLine("yo");
-    sb.AppendLine("test3");
-
-    var result = await Run("findstr", "/N", "yo")
-        .RedirectFrom(sb.ToString())
-        .AsString();
-    Console.WriteLine(result);
-
-    shell.md("test");
-    shell.cd("test");
-    
-    for (int i = 0; i < 100; i++)
-    {
-        await File.WriteAllTextAsync(i.ToString(), i.ToString());
-        Console.WriteLine($"Creating: {i}");
-    }
-
-    foreach (var file in shell.CurrentFolder.GetFiles())
-    {
-        file.Delete();
-        Console.WriteLine($"Deleting: {file.FullName}");
-
-    shell.cd("..");
-    shell.rd("test");
-
-    Console.WriteLine("All done");
-}
-```
-
-If you don't want to have the *shell.* instance prefix, you can derive from CShell and have use the methods
-without a instance pointer, cleaning up your code:
-
-```CSharp
-#r "nuget: Newtonsoft.Json, 11.0.2"
-#r "nuget: MedallionShell, 1.5.1"
-#r "nuget: CShell, 1.1.0"
-
-using CShellNet;
-using System.Threading.Tasks;
-using Medallion.Shell;
-
-new MyScript ().Main(Args).Wait();
-
-class MyScript : CShell
-{
-    public async Task Main(IList<string> args)
-    {
-        foreach (var arg in args)
-        {
-            Console.WriteLine($"{arg}");
-        }
-
-        StringBuilder sb = new StringBuilder();
-        sb.AppendLine("Test");
-        sb.AppendLine("yo");
-        sb.AppendLine("test3");
-
-        var result = await Run("findstr", "/N", "yo")
-            .RedirectFrom(sb.ToString())
-            .AsString();
-        Console.WriteLine(result);
-
-        md("test");
-        cd("test");
-
-        for (int i = 0; i < 100; i++)
-        {
-            await File.WriteAllTextAsync(i.ToString(), i.ToString());
-            Console.WriteLine($"Creating: {i}");
-        }
-
-        foreach (var file in this.CurrentFolder.GetFiles())
-        {
-            file.Delete();
-            Console.WriteLine($"Deleting: {file.FullName}");
-        }
-
-        cd("..");
-        rd("test");
-        Console.WriteLine("All done");
-    }
-}
-```
-
 ### Properties
 CShell exposes 3 properties which are the working environment of your script.  The CurrentFolder is used to resolve relative paths for
 most methods, so if you call **MoveFile(@"..\foo.txt", @"..\..\bar")** it will resolve the paths and execute just like a normal shell.
@@ -271,3 +164,111 @@ To invoke the template
 **``` dotnet new cshell ```**
 
 > NOTE: If you want debug support from visual studio code simply run **dotnet script init** in the same folder.
+
+You can just create a CShell directly and start working with it
+
+```csharp
+#r "nuget: CShell, 1.1.0"
+#r "nuget: MedallionShell, 1.5.1"
+#r "nuget: Newtonsoft.Json, 11.0.2"
+
+using CShellNet;
+using Medallion.Shell;
+
+Main(Args).Wait();
+
+public async Task Main(IList<string> args)
+{
+    var shell = new CShell();
+    
+    foreach(var arg in args)
+    {
+        Console.WriteLine($"{arg}");
+    }
+    
+    StringBuilder sb = new StringBuilder();
+    sb.AppendLine("Test");
+    sb.AppendLine("yo");
+    sb.AppendLine("test3");
+
+    var result = await Run("findstr", "/N", "yo")
+        .RedirectFrom(sb.ToString())
+        .AsString();
+    Console.WriteLine(result);
+
+    shell.md("test");
+    shell.cd("test");
+    
+    for (int i = 0; i < 100; i++)
+    {
+        await File.WriteAllTextAsync(i.ToString(), i.ToString());
+        Console.WriteLine($"Creating: {i}");
+    }
+
+    foreach (var file in shell.CurrentFolder.GetFiles())
+    {
+        file.Delete();
+        Console.WriteLine($"Deleting: {file.FullName}");
+
+    shell.cd("..");
+    shell.rd("test");
+
+    Console.WriteLine("All done");
+}
+```
+
+If you don't want to have the *shell.* instance prefix, you can derive from CShell and have use the methods
+without a instance pointer, cleaning up your code:
+
+```CSharp
+#r "nuget: Newtonsoft.Json, 11.0.2"
+#r "nuget: MedallionShell, 1.5.1"
+#r "nuget: CShell, 1.1.0"
+
+using CShellNet;
+using System.Threading.Tasks;
+using Medallion.Shell;
+
+new MyScript ().Main(Args).Wait();
+
+class MyScript : CShell
+{
+    public async Task Main(IList<string> args)
+    {
+        foreach (var arg in args)
+        {
+            Console.WriteLine($"{arg}");
+        }
+
+        StringBuilder sb = new StringBuilder();
+        sb.AppendLine("Test");
+        sb.AppendLine("yo");
+        sb.AppendLine("test3");
+
+        var result = await Run("findstr", "/N", "yo")
+            .RedirectFrom(sb.ToString())
+            .AsString();
+        Console.WriteLine(result);
+
+        md("test");
+        cd("test");
+
+        for (int i = 0; i < 100; i++)
+        {
+            await File.WriteAllTextAsync(i.ToString(), i.ToString());
+            Console.WriteLine($"Creating: {i}");
+        }
+
+        foreach (var file in this.CurrentFolder.GetFiles())
+        {
+            file.Delete();
+            Console.WriteLine($"Deleting: {file.FullName}");
+        }
+
+        cd("..");
+        rd("test");
+        Console.WriteLine("All done");
+    }
+}
+```
+
