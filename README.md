@@ -1,4 +1,4 @@
-<img src="https://game-icons.net/icons/lorc/originals/png/000000/transparent/turtle.png" width="100"/>
+<img src="https://github.com/tomlm/CShell/raw/master/turtle.png" width="100"/>
 
 # CShell
 CShell creates a runtime environment to make it easy to create C# based shell style scripts.
