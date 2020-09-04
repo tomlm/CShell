@@ -221,9 +221,9 @@ If you don't want to have the *shell.* instance prefix, you can derive from CShe
 without a instance pointer, cleaning up your code:
 
 ```CSharp
-#r "nuget: Newtonsoft.Json, 11.0.2"
-#r "nuget: MedallionShell, 1.5.1"
-#r "nuget: CShell, 1.1.0"
+#r "nuget: Newtonsoft.Json, 12.0.3"
+#r "nuget: MedallionShell, 1.6.1"
+#r "nuget: CShell, 1.2.0"
 
 using CShellNet;
 using System.Threading.Tasks;
@@ -284,7 +284,7 @@ After registering you can simple type **your.csx** to execute your cshell progra
 
 ## CHANGELOG
 
-### v1.1
+### v1.2.0
 * Added echo(true) echo(false) to turn on off echo of the commands
 * added Cmd(".....") to allow you to execute cmd.exe functions (Example: Cmd("dir /b *foo*") )
 * added Bash("....") to allow you to execute bash commands (Example: Bash("ls -al") )
