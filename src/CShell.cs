@@ -70,18 +70,21 @@ namespace CShellNet
         {
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
+
                 if (this._echo)
                 {
                     Console.WriteLine(cmd);
                 }
 
-                cmd = $"/C {cmd}";
+                List<string> args = new List<string>();
+                args.Add("/C");
                 if (!_echo)
                 {
-                    cmd = $"/Q {cmd}";
+                    args.Add("/Q");
                 }
+                args.Add(cmd);
 
-                return Command.Run("cmd.exe", new string[] { cmd }, SetCommandOptions);
+                return Command.Run("cmd.exe", args, SetCommandOptions);
             }
             else
             {
@@ -100,15 +103,18 @@ namespace CShellNet
             {
                 Console.WriteLine(cmd);
             }
+            var args = new List<string>();
 
             var escapedArgs = cmd.Replace("\"", "\\\"");
+            args.Add("-c");
+            args.Add(escapedArgs);
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                return Command.Run("bash.exe", $"-c", escapedArgs);
+                return Command.Run("bash.exe", args, SetCommandOptions);
             }
             else
             {
-                return Command.Run("/bin/bash", "-c", escapedArgs);
+                return Command.Run("/bin/bash", args, SetCommandOptions);
             }
         }
 
