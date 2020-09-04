@@ -283,6 +283,9 @@ After registering you can simple type **your.csx** to execute your cshell progra
 
 
 ## CHANGELOG
+### V1.2.3
+* Added log parameters to AsJson()/AsXml()/AsResult() output standardOut/StandardError
+* added Execute() as alias for AsResult() as that seems cleaner then AsResult()
 
 ### v1.2.1
 * Added ThrowOnError property to turn on/off throwing on command failing.

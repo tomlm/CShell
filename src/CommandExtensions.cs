@@ -1,36 +1,45 @@
 ﻿using Medallion.Shell;
 using Newtonsoft.Json;
 using System;
-using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
-using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Serialization;
 
 namespace CShellNet
 {
-
     public static class CommandExtensions
     {
         /// <summary>
         /// Get results of command as string
         /// </summary>
         /// <param name="cmd"></param>
+        /// <param name="log">if true the output to standardout/error</param>
         /// <returns></returns>
-        public async static Task<string> AsString(this Command cmd)
+        public async static Task<string> AsString(this Command cmd, bool log = false)
         {
             var cmdResult = await cmd.Task.ConfigureAwait(false);
-            return cmdResult.StandardOutput;
+            if (log)
+            {
+                Log(cmdResult);
+            }
+            var output = cmdResult.StandardOutput;
+            return output;
         }
 
         /// <summary>
         /// Convert StandardOutput of command to dynamic object using Json deserialization (JObject)
         /// </summary>
         /// <param name="cmd"></param>
-        /// <returns></returns>
-        public async static Task<dynamic> AsJson(this Command cmd)
+        /// <param name="log">if true the output to standardout/error</param>
+        /// <returns>JObject</returns>
+        public async static Task<dynamic> AsJson(this Command cmd, bool log = false)
         {
             var cmdResult = await cmd.Task.ConfigureAwait(false);
+            if (log)
+            {
+                Log(cmdResult);
+            }
             return JsonConvert.DeserializeObject(cmdResult.StandardOutput);
         }
 
@@ -39,10 +48,15 @@ namespace CShellNet
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="cmd"></param>
+        /// <param name="log">if true the output to standardout/error</param>
         /// <returns></returns>
-        public async static Task<T> AsJson<T>(this Command cmd)
+        public async static Task<T> AsJson<T>(this Command cmd, bool log = false)
         {
             var cmdResult = await cmd.Task.ConfigureAwait(false);
+            if (log)
+            {
+                Log(cmdResult);
+            }
             return JsonConvert.DeserializeObject<T>(cmdResult.StandardOutput);
         }
 
@@ -51,11 +65,15 @@ namespace CShellNet
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="cmd"></param>
+        /// <param name="log">if true the output to standardout/error</param>
         /// <returns></returns>
-        public async static Task<T> AsXml<T>(this Command cmd)
+        public async static Task<T> AsXml<T>(this Command cmd, bool log = false)
         {
             var cmdResult = await cmd.Task.ConfigureAwait(false);
-
+            if (log)
+            {
+                Log(cmdResult);
+            }
             XmlSerializer serializer = new XmlSerializer(typeof(T));
             using (TextReader reader = new StringReader(cmdResult.StandardOutput))
             {
@@ -67,10 +85,27 @@ namespace CShellNet
         /// Return the CommandResult of the complted comman chain
         /// </summary>
         /// <param name="cmd"></param>
+        /// <param name="log">if true the output to standardout/error</param>
         /// <returns>task which represents the completition of the command chain</returns>
-        public static Task<CommandResult> AsResult(this Command cmd)
+        public static async Task<CommandResult> AsResult(this Command cmd, bool log = false)
         {
-            return cmd.Task;
+            var cmdResult = await cmd.Task.ConfigureAwait(false);
+            if (log)
+            {
+                Log(cmdResult);
+            }
+            return cmdResult;
+        }
+
+        /// <summary>
+        /// Execute the command returning the CommandResult (alias for AsResult()) 
+        /// </summary>
+        /// <param name="cmd"></param>
+        /// <param name="log">if true the output to standardout/error</param>
+        /// <returns>task which represents the completition of the command chain</returns>
+        public static Task<CommandResult> Execute(this Command cmd, bool log = false)
+        {
+            return cmd.AsResult(log);
         }
 
         /// <summary>
@@ -111,6 +146,15 @@ namespace CShellNet
             return sourceCommand.PipeTo(Command.Run(exe, arguments));
         }
 
+        private static void Log(CommandResult cmdResult)
+        {
+            if (!cmdResult.Success)
+            {
+                Console.Error.Write(cmdResult.StandardError);
+                Debug.Fail(cmdResult.StandardError);
+            }
+            Console.Write(cmdResult.StandardOutput);
+            Debug.Write(cmdResult.StandardOutput);
+        }
     }
-
 }

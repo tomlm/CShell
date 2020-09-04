@@ -137,6 +137,15 @@ namespace CShellLibTests
             var result = await shell.Bash("ls TestA.txt").AsString();
             Assert.AreEqual("TestA.txt", result.Trim(), "AsString");
         }
+
+        [TestMethod]
+        public async Task Test_Log()
+        {
+            CShell shell = new CShell();
+            shell.cd(testFolder);
+            var commandResult = await shell.Cmd("dir /b TestA.txt").Execute(true);
+        }
+
     }
 
 }

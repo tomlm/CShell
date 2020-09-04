@@ -77,11 +77,11 @@ namespace CShellNet
                 }
 
                 List<string> args = new List<string>();
-                args.Add("/C");
                 if (!_echo)
                 {
                     args.Add("/Q");
                 }
+                args.Add("/C");
                 args.Add(cmd);
 
                 return Command.Run("cmd.exe", args, SetCommandOptions);
