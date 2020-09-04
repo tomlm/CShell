@@ -284,6 +284,9 @@ After registering you can simple type **your.csx** to execute your cshell progra
 
 ## CHANGELOG
 
+### v1.2.1
+* Added ThrowOnError property to turn on/off throwing on command failing.
+
 ### v1.2.0
 * Added echo(true) echo(false) to turn on off echo of the commands
 * added Cmd(".....") to allow you to execute cmd.exe functions (Example: Cmd("dir /b *foo*") )

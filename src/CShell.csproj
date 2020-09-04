@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
@@ -15,9 +15,9 @@
     <RepositoryType>git</RepositoryType>
     <PackageTags>scripting dotnet csharp</PackageTags>
     <PackageId>CShell</PackageId>
-    <AssemblyVersion>1.2.0.0</AssemblyVersion>
-    <FileVersion>2.0.11.0</FileVersion>
-    <Version>1.2.0</Version>
+    <AssemblyVersion>1.2.1.0</AssemblyVersion>
+    <FileVersion>1.2.1.0</FileVersion>
+    <Version>1.2.1</Version>
   </PropertyGroup>
 
   <ItemGroup>

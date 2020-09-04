@@ -85,6 +85,7 @@ namespace CShellLibTests
         public async Task Test_AsResult()
         {
             CShell shell = new CShell();
+            shell.ThrowOnError = false;
             shell.cd(testFolder);
 
             var result = await shell.ReadFile("TestA.txt").AsResult();
@@ -102,6 +103,7 @@ namespace CShellLibTests
         public async Task Test_AsFile()
         {
             CShell shell = new CShell();
+            shell.ThrowOnError = false;
             shell.cd(testFolder);
 
             var tmpOut = Path.GetTempFileName();

@@ -42,6 +42,9 @@ namespace CShellNet
             }
         }
 
+        public bool ThrowOnError { get; set; } = true;
+
+
         /// <summary>
         /// Run a process
         /// </summary>
@@ -77,7 +80,8 @@ namespace CShellNet
                 {
                     cmd = $"/Q {cmd}";
                 }
-                return Command.Run("cmd.exe", cmd);
+
+                return Command.Run("cmd.exe", new string[] { cmd }, SetCommandOptions);
             }
             else
             {
@@ -483,10 +487,11 @@ namespace CShellNet
         public virtual void SetCommandOptions(Shell.Options options)
         {
             options.StartInfo((psi) =>
-            {
-                // set working folder
-                psi.WorkingDirectory = this.CurrentFolder.FullName;
-            });
+                {
+                    // set working folder
+                    psi.WorkingDirectory = this.CurrentFolder.FullName;
+                })
+                .ThrowOnError(this.ThrowOnError);
         }
 
     }
