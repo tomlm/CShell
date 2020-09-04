@@ -271,3 +271,13 @@ To invoke the template
 **``` dotnet new cshell ```**
 
 > NOTE: If you want debug support from visual studio code simply run **dotnet script init** in the same folder.
+
+
+## CHANGELOG
+
+### v1.1
+* Added echo(true) echo(false) to turn on off echo of the commands
+* added Cmd(".....") to allow you to execute cmd.exe functions (Example: Cmd("dir /b *foo*") )
+* added Bash("....") to allow you to execute bash commands (Example: Bash("ls -al") )
+* Upgraded MedalianShell to 1.6.1
+* upgraded JSon.Net to 12.x

@@ -15,6 +15,8 @@ namespace CShellNet
     /// </summary>
     public class CShell
     {
+        private bool _echo = true;
+
         /// <summary>
         /// Start a shell
         /// </summary>
@@ -48,9 +50,63 @@ namespace CShellNet
         /// <returns></returns>
         public Command Run(String executable, params Object[] arguments)
         {
+            if (this._echo)
+            {
+                Console.WriteLine($"{executable} {String.Join(" ", arguments)}");
+            }
+
             return Command.Run(executable, arguments, SetCommandOptions);
         }
 
+        /// <summary>
+        /// Run a cmd/bash command
+        /// </summary>
+        /// <param name="cmd">shell cmd to run</param>
+        /// <returns>Command</returns>
+        public Command Cmd(string cmd)
+        {
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                if (this._echo)
+                {
+                    Console.WriteLine(cmd);
+                }
+
+                cmd = $"/C {cmd}";
+                if (!_echo)
+                {
+                    cmd = $"/Q {cmd}";
+                }
+                return Command.Run("cmd.exe", cmd);
+            }
+            else
+            {
+                return Bash(cmd);
+            }
+        }
+
+        /// <summary>
+        /// Run a bash command
+        /// </summary>
+        /// <param name="cmd">shell cmd to run</param>
+        /// <returns>Command</returns>
+        public Command Bash(string cmd)
+        {
+            if (this._echo)
+            {
+                Console.WriteLine(cmd);
+            }
+
+            var escapedArgs = cmd.Replace("\"", "\\\"");
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                return Command.Run("bash.exe", $"-c", escapedArgs);
+            }
+            else
+            {
+                return Command.Run("/bin/bash", "-c", escapedArgs);
+            }
+        }
 
         /// <summary>
         /// Current folder
@@ -83,6 +139,17 @@ namespace CShellNet
         /// Stack of paths (only modifed by PushFolder or PopFolder)
         /// </summary>
         public Stack<string> FolderStack { get; private set; }
+
+        /// <summary>
+        /// Turn echo on and off 
+        /// </summary>
+        /// <param name="echo">true to have command echoed</param>
+        /// <returns></returns>
+        public CShell echo(bool echo)
+        {
+            this._echo = echo;
+            return this;
+        }
 
         /// <summary>
         /// Change Current Folder 
@@ -121,7 +188,7 @@ namespace CShellNet
         /// <param name="sourcePath">absolute or relative path to a source file or folder</param>
         /// <param name="targetPath">absolute or relative path to a target File or folder</param>
         /// <returns></returns>
-        public CShell copy(string sourcePath, string targetPath, bool overwrite = false, bool recursive=false)
+        public CShell copy(string sourcePath, string targetPath, bool overwrite = false, bool recursive = false)
         {
             if (Directory.Exists(sourcePath))
             {

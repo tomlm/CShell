@@ -111,13 +111,30 @@ namespace CShellLibTests
             var stdout = File.ReadAllText(tmpOut);
             Assert.AreEqual(stdout, result.StandardOutput, "result stdout");
 
-            var result2= await shell.ReadFile("TestAsdfsdf.txt").AsFile(tmpOut, tmpErr);
+            var result2 = await shell.ReadFile("TestAsdfsdf.txt").AsFile(tmpOut, tmpErr);
             var stdout2 = File.ReadAllText(tmpOut);
             var stderr2 = File.ReadAllText(tmpErr);
             Assert.AreEqual(stdout2, result2.StandardOutput, "result stdout");
             Assert.AreEqual(stderr2, result2.StandardError, "result stderr");
         }
 
+        [TestMethod]
+        public async Task Test_Cmd()
+        {
+            CShell shell = new CShell();
+            shell.cd(testFolder);
+            var result = await shell.Cmd("dir /b TestA.txt").AsString();
+            Assert.AreEqual("TestA.txt", result.Trim(), "AsString");
+        }
+
+        [TestMethod]
+        public async Task Test_Bash()
+        {
+            CShell shell = new CShell();
+            shell.cd(testFolder);
+            var result = await shell.Bash("ls TestA.txt").AsString();
+            Assert.AreEqual("TestA.txt", result.Trim(), "AsString");
+        }
     }
 
 }
