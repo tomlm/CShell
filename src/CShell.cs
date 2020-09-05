@@ -15,8 +15,6 @@ namespace CShellNet
     /// </summary>
     public class CShell
     {
-        private bool _echo = true;
-
         /// <summary>
         /// Start a shell
         /// </summary>
@@ -44,6 +42,8 @@ namespace CShellNet
 
         public bool ThrowOnError { get; set; } = true;
 
+        public bool Echo { get; set; } = true;
+
 
         /// <summary>
         /// Run a process
@@ -53,7 +53,7 @@ namespace CShellNet
         /// <returns></returns>
         public Command Run(String executable, params Object[] arguments)
         {
-            if (this._echo)
+            if (this.Echo)
             {
                 Console.WriteLine($"{executable} {String.Join(" ", arguments)}");
             }
@@ -70,14 +70,13 @@ namespace CShellNet
         {
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-
-                if (this._echo)
+                if (this.Echo)
                 {
                     Console.WriteLine(cmd);
                 }
 
                 List<string> args = new List<string>();
-                if (!_echo)
+                if (!Echo)
                 {
                     args.Add("/Q");
                 }
@@ -99,7 +98,7 @@ namespace CShellNet
         /// <returns>Command</returns>
         public Command Bash(string cmd)
         {
-            if (this._echo)
+            if (this.Echo)
             {
                 Console.WriteLine(cmd);
             }
@@ -149,17 +148,6 @@ namespace CShellNet
         /// Stack of paths (only modifed by PushFolder or PopFolder)
         /// </summary>
         public Stack<string> FolderStack { get; private set; }
-
-        /// <summary>
-        /// Turn echo on and off 
-        /// </summary>
-        /// <param name="echo">true to have command echoed</param>
-        /// <returns></returns>
-        public CShell echo(bool echo)
-        {
-            this._echo = echo;
-            return this;
-        }
 
         /// <summary>
         /// Change Current Folder 
