@@ -19,11 +19,13 @@ By maintaining the concept of a current folder  all file and folder commands can
 CShell exposes 3 properties which are the working environment of your script.  The CurrentFolder is used to resolve relative paths for
 most methods, so if you call **MoveFile(@"..\foo.txt", @"..\..\bar")** it will resolve the paths and execute just like a normal shell.
 
-| Property          | Description                                  |
-|-------------------|----------------------------------------------|
-| **CurrentFolder** | The current folder as a DirectoryInfo object |
-| **FolderHistory** | List of folder paths you have navigated to   |
-| **FolderStack**   | current stack from Push/Pop operations       |
+| Property          | Description                                    |
+|-------------------|----------------------------------------------  |
+| **CurrentFolder** | The current folder as a DirectoryInfo object   |
+| **FolderHistory** | List of folder paths you have navigated to     |
+| **FolderStack**   | current stack from Push/Pop operations         |
+| **Echo**          | Controls whether commands are echoed to output |
+| **ThrowOnError**  | Controls whether to throw exception when commands have non-sucess error code |
 
 ### Folder Methods
 CShell defines a number of methods which work relative to the current folder to make it easy
@@ -57,7 +59,11 @@ CShell is built using [MedallionShell](https://github.com/madelson/MedallionShel
 processes and piping data between them.  CShell adds on location awareness and helper methods
 to make it even easier to work with the output of processes.
 
-To invoke a process you simply call .Run(). You can chain processes together using .PipeTo(), pipe '**|**' or greater than '**>**'.
+| Method           | Description                                                                                      |
+|------------------|--------------------------------------------------------------------------------------------------|
+| **Run(program, arg1, ..., argN)**    | run a program directly with the given args (aka Process.Start(program, args) |
+| **Cmd(cmd)**  | run the cmd inside a cmd.exe, allow you to execute shell commands (like dir /b *.*                  |
+| **Bash(bash)**  | run the program in bash environment, allow you to execute bash shell commands (like ls -al *      |
 
 ```CSharp
 class MyScript: CShell
@@ -70,7 +76,6 @@ class MyScript: CShell
       .PipeTo("cmd3", "args4");
     CommandResult result1 = await cmd1.AsResult();
 
-
     // we can even chain commands together with the pipe operator
     Command cmd2 = await Run("cmd1", "args1") 
       | Run("cmd2", "args2", "args3") 
@@ -82,44 +87,54 @@ class MyScript: CShell
       > Run("cmd2", "args2", "args3")
       > Run("cmd3", "args4");
     CommandResult  result3 = await cmd3.AsResult();
+    
   }
 }
 ```
 
 The CommandResult object has StandardOutput, StandardError information for further processing.
 
-
-#### Working with typed results
-Medallion makes it wasy to work with processes, but CShell adds on helper methods to make it even
-easier to work with the result of a command chain.
+#### Working with results
+CShell adds on helper methods to make it even easier to work with the result of a command chain.
 
 | Method           | Description                                                                  |
 |------------------|------------------------------------------------------------------------------|
-| **AsResult()**   | get the CommandResult (with stdout/stderr) of the last command               |
-| **AsString()**   | get the standard out of the last command a string                            |
-| **AsJson()**     | JSON Deserialize the standard out of the last command into a JObject/dynamic |
-| **AsJson\<T>()** | JSON Deserialize the standard out of the last command into a typed T         |
-| **AsXml\<T>()**  | XML Deserialize the standard out of the last command intoa typed T           |
+| **Execute(log)**    | get the CommandResult (with stdout/stderr) of the last command               |
+| **AsString(log)**   | get the standard out of the last command a string                            |
+| **AsJson(log)**     | JSON Deserialize the standard out of the last command into a JObject/dynamic |
+| **AsJson\<T>(log)** | JSON Deserialize the standard out of the last command into a typed T         |
+| **AsXml\<T>(log)**  | XML Deserialize the standard out of the last command intoa typed T           |
 | **AsFile()**     | Write the stdout/stderr  of the last command to a file                       |
 
-This allows you to change the previous example directly into a typed object in one command:
+
+To call a program you await on:
+1. call Run()/Cmd()/Bash()
+2. call any chaining commands
+3. end with a result call like Execute()/AsJson()/AsString()/AsXml()etc.
+
+The result methods all take a log argument is passed set to true then the commands output will be written to standard out.
 
 ```CSharp
 class MyScript: CShell
 {
   async Task Main(IList<string> args)
   {
-    // get the result as dynamic object
-    dynamic jsonResult  = await Run("cmd1", "args1")
-      .PipeTo("cmd2", "args2", "args3")
-      .PipeTo("cmd3", "args4")
-      .AsJson();
-
-    // get the json result as a typed object
-    MyObject myObject  = await Run("cmd1", "args1")
-      .PipeTo("cmd2", "args2", "args3")
-      .PipeTo("cmd3", "args4")
-      .AsJson<MyObject>();
+    // run a command and interpret the json as an AccountInfo object
+    var account = await Cmd("az account show").AsJson<AccountInfo>();
+    
+    // run a command and interpret the XML as an AccountInfo object
+    var account2 = await Cmd("az account show -o xml").AsXml<AccountInfo>();
+    
+    // run a command interpret the result as a string.
+    var accountString = await Cmd("az account show").AsString();
+    
+    // run a command and get back the CommandResult which has Succes, StatusCode, StandardInput and StandardError.
+    CommandResult result = await Run("x", "foo") | Cmd("az account show").Execute();
+    if(result.Sucess)
+    {
+        var output = result.StandardOutput;
+        ...
+    }
   }
 }
 ```
@@ -145,6 +160,7 @@ class MyScript: CShell
     }
 }
 ```
+
 
 
 ## CShell + dotnet-script == awesome
@@ -191,7 +207,7 @@ public async Task Main(IList<string> args)
     sb.AppendLine("yo");
     sb.AppendLine("test3");
 
-    var result = await Run("findstr", "/N", "yo")
+    var result = await Cmd("findstr /N yo")
         .RedirectFrom(sb.ToString())
         .AsString();
     Console.WriteLine(result);
