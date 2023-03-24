@@ -485,7 +485,7 @@ namespace CShellNet
                     // set working folder
                     psi.WorkingDirectory = this.CurrentFolder.FullName;
                 })
-                .ThrowOnError(this.ThrowOnError);
+                .ThrowOnError(false); // this.ThrowOnError);
         }
 
     }

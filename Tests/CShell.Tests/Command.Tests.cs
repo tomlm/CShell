@@ -2,6 +2,7 @@ using CShellNet;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using System;
 using System.IO;
 using System.Reflection;
 using System.Threading.Tasks;
@@ -70,6 +71,7 @@ namespace CShellLibTests
             Assert.AreEqual(42, (int)record3.age, "dynamic age is wrong");
         }
 
+
         [TestMethod]
         public async Task Test_AsXml()
         {
@@ -118,6 +120,57 @@ namespace CShellLibTests
             var stderr2 = File.ReadAllText(tmpErr);
             Assert.AreEqual(stdout2, result2.StandardOutput, "result stdout");
             Assert.AreEqual(stderr2, result2.StandardError, "result stderr");
+        }
+
+        [TestMethod]
+        public async Task Test_Throw_AsJson()
+        {
+            CShell shell = new CShell();
+            shell.cd(testFolder);
+
+            try
+            {
+                var record = await shell.Run("xyz").AsJson();
+                Assert.Fail("Should have thrown");
+            }
+            catch (Exception err)
+            {
+                Assert.IsTrue(err.Message.Contains("The system cannot find the file specified."));
+            }
+        }
+
+        [TestMethod]
+        public async Task Test_Throw_AsXml()
+        {
+            CShell shell = new CShell();
+            shell.cd(testFolder);
+
+            try
+            {
+                var record = await shell.Run("xyz").AsXml<object>();
+                Assert.Fail("Should have thrown");
+            }
+            catch (Exception err)
+            {
+                Assert.IsTrue(err.Message.Contains("The system cannot find the file specified."));
+            }
+        }
+
+        [TestMethod]
+        public async Task Test_Throw_AsString()
+        {
+            CShell shell = new CShell();
+            shell.cd(testFolder);
+
+            try
+            {
+                var record = await shell.Run("xyz").AsString();
+                Assert.Fail("Should have thrown");
+            }
+            catch (Exception err)
+            {
+                Assert.IsTrue(err.Message.Contains("The system cannot find the file specified."));
+            }
         }
 
         [TestMethod]

@@ -1,10 +1,6 @@
 ﻿using Medallion.Shell;
 using Newtonsoft.Json;
-using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Text;
-using System.Threading.Tasks;
 using System.Xml.Serialization;
 
 namespace CShellNet
@@ -18,6 +14,11 @@ namespace CShellNet
         /// <returns></returns>
         public static string AsString(this CommandResult cmdResult)
         {
+            if (!cmdResult.Success)
+            {
+                throw new CommandResultException(cmdResult);
+            }
+
             return cmdResult.StandardOutput;
         }
 
@@ -28,6 +29,11 @@ namespace CShellNet
         /// <returns></returns>
         public static dynamic AsJson(this CommandResult cmdResult)
         {
+            if (!cmdResult.Success)
+            {
+                throw new CommandResultException(cmdResult);
+            }
+
             return JsonConvert.DeserializeObject(cmdResult.StandardOutput);
         }
 
@@ -39,6 +45,11 @@ namespace CShellNet
         /// <returns></returns>
         public static T AsJson<T>(this CommandResult cmdResult)
         {
+            if (!cmdResult.Success)
+            {
+                throw new CommandResultException(cmdResult);
+            }
+
             return JsonConvert.DeserializeObject<T>(cmdResult.StandardOutput);
         }
 
@@ -50,6 +61,11 @@ namespace CShellNet
         /// <returns></returns>
         public static T AsXml<T>(this CommandResult cmdResult)
         {
+            if (!cmdResult.Success)
+            {
+                throw new CommandResultException(cmdResult);
+            }
+
             XmlSerializer serializer = new XmlSerializer(typeof(T));
             using (TextReader reader = new StringReader(cmdResult.StandardOutput))
             {

@@ -23,6 +23,12 @@ namespace CShellNet
             {
                 Log(cmdResult);
             }
+
+            if (!cmdResult.Success)
+            {
+                throw new CommandResultException(cmdResult);
+            }
+
             var output = cmdResult.StandardOutput;
             return output;
         }
@@ -40,6 +46,12 @@ namespace CShellNet
             {
                 Log(cmdResult);
             }
+
+            if (!cmdResult.Success)
+            {
+                throw new CommandResultException(cmdResult);
+            }
+
             return JsonConvert.DeserializeObject(cmdResult.StandardOutput);
         }
 
@@ -57,6 +69,12 @@ namespace CShellNet
             {
                 Log(cmdResult);
             }
+
+            if (!cmdResult.Success)
+            {
+                throw new CommandResultException(cmdResult);
+            }
+
             return JsonConvert.DeserializeObject<T>(cmdResult.StandardOutput);
         }
 
@@ -74,6 +92,11 @@ namespace CShellNet
             {
                 Log(cmdResult);
             }
+            if (!cmdResult.Success)
+            {
+                throw new CommandResultException(cmdResult);
+            }
+
             XmlSerializer serializer = new XmlSerializer(typeof(T));
             using (TextReader reader = new StringReader(cmdResult.StandardOutput))
             {
@@ -115,13 +138,13 @@ namespace CShellNet
         /// <returns>CommandResult of previous command</returns>
         public static async Task<CommandResult> AsFile(this Command cmd, string stdoutPath, string stderrPath = null)
         {
-            var result = await cmd.Task;
+            var cmdResult = await cmd.Task;
 
             if (!Path.IsPathRooted(stdoutPath))
             {
                 stdoutPath = Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, stdoutPath));
             }
-            File.WriteAllText(stdoutPath, result.StandardOutput);
+            File.WriteAllText(stdoutPath, cmdResult.StandardOutput);
 
             if (stderrPath != null)
             {
@@ -129,9 +152,9 @@ namespace CShellNet
                 {
                     stderrPath = Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, stderrPath));
                 }
-                File.WriteAllText(stderrPath, result.StandardError);
+                File.WriteAllText(stderrPath, cmdResult.StandardError);
             }
-            return result;
+            return cmdResult;
         }
 
         /// <summary>
