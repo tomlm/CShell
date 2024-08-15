@@ -1,12 +1,12 @@
-#r "nuget: Newtonsoft.Json, 11.0.2"
-#r "nuget: MedallionShell, 1.5.1"
-#r "nuget: CShell, 1.1.0"
+#r "nuget: Newtonsoft.Json, 13.0.3"
+#r "nuget: MedallionShell, 1.6.2"
+#r "nuget: CShell, 1.4.0"
 
 using CShellNet;
 using System.Threading.Tasks;
 using Medallion.Shell;
 
-new Script ().Main(Args).Wait();
+await new Script().Main(Args);
 
 // goto https://github.com/tomlm/CShell/blob/master/README.md for documentation
 
@@ -52,5 +52,21 @@ class Script : CShell
         //   .PipeTo("cmd3", "args4")
         //   .AsFile("stdout.txt", "stderr.txt");
 
+	/* Getting results from command
+	| Method             | Description                                                                  |
+	|--------------------|------------------------------------------------------------------------------|
+	| **Execute(log)**   | get the CommandResult (with stdout/stderr) of the last command               |
+	| **AsString(log)**  | get the standard out of the last command a string                            |
+	| **AsJson(log)**    | JSON Deserialize the standard out of the last command into a JObject/dynamic |
+	| **AsJson<T>(log)** | JSON Deserialize the standard out of the last command into a typed T         |
+	| **AsXml<T>(log)**  | XML Deserialize the standard out of the last command intoa typed T           |
+	| **AsFile()**       | Write the stdout/stderr  of the last command to a file                       |
+	*/
+
+	// Example: Getting output as Json => MyClass
+	// MyClass obj = await ReadFile("myfile.json").AsJson<MyClass>();
+
+	// Example: Getting output as XML => MyClass
+	// MyClass obj = await ReadFile("myfile.json").AsXml<MyClass>();
     }
 }

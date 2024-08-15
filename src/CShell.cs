@@ -53,12 +53,69 @@ namespace CShellNet
         /// <returns></returns>
         public Command Run(String executable, params Object[] arguments)
         {
+            return Run((opt) => { }, executable, arguments);
+        }
+
+        /// <summary>
+        /// Run a process with options.
+        /// </summary>
+        /// <param name="executable"></param>
+        /// <param name="options">options function</param>
+        /// <param name="arguments"></param>
+        /// <returns></returns>
+        public Command Run(Action<Shell.Options> options, string executable, params Object[] arguments)
+        {
             if (this.Echo)
             {
                 Console.WriteLine($"{executable} {String.Join(" ", arguments)}");
             }
 
-            return Command.Run(executable, arguments, SetCommandOptions);
+            return Command.Run(executable, arguments, (opt) =>
+            {
+                this.SetCommandOptions(opt);
+                options(opt);
+            });
+        }
+
+        /// <summary>
+        /// Start a process detached 
+        /// </summary>
+        /// <param name="executable"></param>
+        /// <param name="arguments"></param>
+        /// <returns></returns>
+        public Command Start(string executable, params Object[] arguments)
+        {
+            return Start((opt) => { }, executable, arguments);
+        }
+        
+        /// <summary>
+        /// Start a process detached.
+        /// </summary>
+        /// <param name="executable"></param>
+        /// <param name="arguments"></param>
+        /// <returns></returns>
+        public Command Start(Action<Shell.Options> options, string executable, params Object[] arguments)
+        {
+            if (this.Echo)
+            {
+                Console.WriteLine($"{executable} {String.Join(" ", arguments)}");
+            }
+
+            return Command.Run(executable, arguments, opt =>
+            {
+                this.SetCommandOptions(opt);
+
+                options(opt);
+                opt.DisposeOnExit(false);
+                opt.StartInfo((info) =>
+                {
+                    // detached process
+                    info.RedirectStandardError = false;
+                    info.RedirectStandardInput = false;
+                    info.RedirectStandardOutput = false;
+                    info.UseShellExecute = true;
+                });
+            });
         }
 
         /// <summary>

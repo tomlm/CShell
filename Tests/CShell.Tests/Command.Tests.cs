@@ -192,6 +192,47 @@ namespace CShellLibTests
         }
 
         [TestMethod]
+        public async Task Test_Start()
+        {
+            CShell shell = new CShell();
+            shell.cd(testFolder);
+            var command = shell.Start("test.cmd");
+            Assert.IsFalse(command.Process.HasExited);
+            await Task.Delay(3000);
+            Assert.IsTrue(command.Process.HasExited);
+        }
+
+        [TestMethod]
+        public async Task Test_StartExecute()
+        {
+            CShell shell = new CShell();
+            shell.cd(testFolder);
+            var result = await shell.Start("test.cmd").Execute();
+            Assert.IsTrue(result.Success);
+            try
+            {
+                result = await shell.Start("xxxxxtest.cmd").Execute();
+                Assert.Fail("Should have thrown execption)");
+            }
+            catch(Exception err)
+            {
+
+            }
+        }
+
+        [TestMethod]
+        public async Task Test_StartKill()
+        {
+            CShell shell = new CShell();
+            shell.cd(testFolder);
+            var command = shell.Start("test.cmd");
+            Assert.IsFalse(command.Process.HasExited);
+            await Task.Delay(500);
+            command.Kill();
+            Assert.IsTrue(command.Process.HasExited);
+        }
+
+        [TestMethod]
         public async Task Test_Log()
         {
             CShell shell = new CShell();

@@ -62,6 +62,7 @@ to make it even easier to work with the output of processes.
 | Method           | Description                                                                                      |
 |------------------|--------------------------------------------------------------------------------------------------|
 | **Run(program, arg1, ..., argN)**    | run a program directly with the given args (aka Process.Start(program, args) |
+| **Start(program, arg1, ..., argN)**    | run a DETACHED program directly with the given args (aka Process.Start(program, args)|
 | **Cmd(cmd)**  | run the cmd inside a cmd.exe, allow you to execute shell commands (like dir /b *.*                  |
 | **Bash(bash)**  | run the program in bash environment, allow you to execute bash shell commands (like ls -al *      |
 
@@ -184,7 +185,7 @@ To invoke the template
 You can just create a CShell directly and start working with it
 
 ```csharp
-#r "nuget: CShell, 1.1.0"
+#r "nuget: CShell, 1.4.0"
 #r "nuget: MedallionShell, 1.5.1"
 #r "nuget: Newtonsoft.Json, 11.0.2"
 
@@ -239,13 +240,13 @@ without a instance pointer, cleaning up your code:
 ```CSharp
 #r "nuget: Newtonsoft.Json, 12.0.3"
 #r "nuget: MedallionShell, 1.6.1"
-#r "nuget: CShell, 1.2.0"
+#r "nuget: CShell, 1.4.0"
 
 using CShellNet;
 using System.Threading.Tasks;
 using Medallion.Shell;
 
-new MyScript ().Main(Args).Wait();
+await new MyScript ().Main(Args);
 
 class MyScript : CShell
 {
@@ -299,6 +300,10 @@ After registering you can simple type **your.csx** to execute your cshell progra
 
 
 ## CHANGELOG
+### V1.4.0
+* Added Start() method for detached processess (you can monitor process but not access input/output)
+* Added Run(Action<Option>, process, arg1, arg2) signature to control options for starting processes
+
 ### V1.2.3
 * Added log parameters to AsJson()/AsXml()/AsResult() output standardOut/StandardError
 * added Execute() as alias for AsResult() as that seems cleaner then AsResult()
