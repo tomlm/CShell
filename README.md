@@ -62,7 +62,7 @@ to make it even easier to work with the output of processes.
 | Method           | Description                                                                                      |
 |------------------|--------------------------------------------------------------------------------------------------|
 | **ReadFile()/cat()/type()  | read a file and create a stream                                                                   |
-| **echo() | echo text into a stream |
+| **echo() | echo text,lines into a stream |
 | **Run(program, arg1, ..., argN)**    | run a program directly with the given args (aka Process.Start(program, args) |
 | **Start(program, arg1, ..., argN)**    | run a DETACHED program directly with the given args (aka Process.Start(program, args)|
 | **Cmd(cmd)**  | run the cmd inside a cmd.exe, allow you to execute shell commands (like dir /b *.*                  |

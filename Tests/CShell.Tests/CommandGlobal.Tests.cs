@@ -198,7 +198,7 @@ namespace CShellLibTests
                 result = await Start("xxxxxtest.cmd").Execute();
                 Assert.Fail("Should have thrown execption)");
             }
-            catch (Exception err)
+            catch 
             {
 
             }
