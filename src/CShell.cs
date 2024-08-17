@@ -3,7 +3,9 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace CShellNet
 {
@@ -87,7 +89,7 @@ namespace CShellNet
         {
             return Start((opt) => { }, executable, arguments);
         }
-        
+
         /// <summary>
         /// Start a process detached.
         /// </summary>
@@ -110,6 +112,7 @@ namespace CShellNet
                 opt.StartInfo((info) =>
                 {
                     // detached process
+                    info.CreateNoWindow = false;
                     info.RedirectStandardError = false;
                     info.RedirectStandardInput = false;
                     info.RedirectStandardOutput = false;
@@ -507,6 +510,40 @@ namespace CShellNet
                 return Command.Run("cat", args, SetCommandOptions);
             }
             throw new ArgumentOutOfRangeException("Unknown operating system");
+        }
+
+        /// <summary>
+        /// Turns lines of text to a command
+        /// </summary>
+        /// <param name="text"></param>
+        /// <returns></returns>
+        public Command echo(IEnumerable<string> lines)
+        {
+            var path = Path.Combine(Path.GetTempPath(), Path.GetTempFileName());
+            File.WriteAllLines(path, lines);
+            return ReadFile(path);
+        }
+
+        /// <summary>
+        /// Turns text to a command
+        /// </summary>
+        /// <param name="text"></param>
+        /// <returns></returns>
+        public Command echo(string text)
+        {
+            var path = Path.Combine(Path.GetTempPath(), Path.GetTempFileName());
+            File.WriteAllText(path, text);
+            return ReadFile(path);
+        }
+
+        /// <summary>
+        /// Turns text to a command
+        /// </summary>
+        /// <param name="text"></param>
+        /// <returns></returns>
+        public Command echo(TextReader textReader)
+        {
+            return echo(textReader.ReadToEnd());
         }
 
         /// <summary>

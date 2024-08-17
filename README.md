@@ -61,6 +61,8 @@ to make it even easier to work with the output of processes.
 
 | Method           | Description                                                                                      |
 |------------------|--------------------------------------------------------------------------------------------------|
+| **ReadFile()/cat()/type()  | read a file and create a stream                                                                   |
+| **echo() | echo text into a stream |
 | **Run(program, arg1, ..., argN)**    | run a program directly with the given args (aka Process.Start(program, args) |
 | **Start(program, arg1, ..., argN)**    | run a DETACHED program directly with the given args (aka Process.Start(program, args)|
 | **Cmd(cmd)**  | run the cmd inside a cmd.exe, allow you to execute shell commands (like dir /b *.*                  |
@@ -109,59 +111,34 @@ CShell adds on helper methods to make it even easier to work with the result of 
 
 
 To call a program you await on:
-1. call Run()/Cmd()/Bash()
-2. call any chaining commands
+1. call ReadFile()/Run()/Cmd()/Bash()/echo()
+2. call any chaining commands 
 3. end with a result call like Execute()/AsJson()/AsString()/AsXml()etc.
 
 The result methods all take a log argument is passed set to true then the commands output will be written to standard out.
 
 ```CSharp
-class MyScript: CShell
+global using static CShellNet.Globals;
+
+Console.WriteLine("Hello world!");
+
+// run a command and interpret the json as an AccountInfo object
+var account = await Cmd("az account show").AsJson<AccountInfo>();
+    
+// run a command and interpret the XML as an AccountInfo object
+var account2 = await Cmd("az account show -o xml").AsXml<AccountInfo>();
+    
+// run a command interpret the result as a string.
+var accountString = await Cmd("az account show").AsString();
+    
+// run a command and get back the CommandResult which has Succes, StatusCode, StandardInput and StandardError.
+var result = await Run("x", "foo") | Cmd("az account show").Execute();
+if(result.Sucess)
 {
-  async Task Main(IList<string> args)
-  {
-    // run a command and interpret the json as an AccountInfo object
-    var account = await Cmd("az account show").AsJson<AccountInfo>();
-    
-    // run a command and interpret the XML as an AccountInfo object
-    var account2 = await Cmd("az account show -o xml").AsXml<AccountInfo>();
-    
-    // run a command interpret the result as a string.
-    var accountString = await Cmd("az account show").AsString();
-    
-    // run a command and get back the CommandResult which has Succes, StatusCode, StandardInput and StandardError.
-    CommandResult result = await Run("x", "foo") | Cmd("az account show").Execute();
-    if(result.Sucess)
-    {
-        var output = result.StandardOutput;
-        ...
-    }
-  }
+    var output = result.StandardOutput;
+    ...
 }
 ```
-
-#### Working with files
-CShell has ReadFile() and AsFile() extension methods which allow you to "start" the
-process chain from a file, or to end with it in a file.
-
-| Method          | Description                                                                 |
-|-----------------|-----------------------------------------------------------------------------|
-| **.ReadFile()** | Read the file and use it as a Command that can be piped into other commands |
-| **.AsFile()**   | Write the stdout/stderr of the last command to a file                       |
-
-```CSharp
-class MyScript: CShell
-{
-    async Task Main(IList<string> args)	{
-    // start with text file and pass into cmd2, then write the final stdout and stderr and return a CommandResult
-    var result  = await ReadFile("myfile.txt")
-        .PipeTo("cmd2", "args2", "args3")
-        .PipeTo("cmd3", "args4")
-        .AsFile("stdout.txt", "stderr.txt");
-    }
-}
-```
-
 
 
 ## CShell + dotnet-script == awesome
@@ -182,110 +159,15 @@ To invoke the template
 
 > NOTE: If you want debug support from visual studio code simply run **dotnet script init** in the same folder.
 
-You can just create a CShell directly and start working with it
-
 ```csharp
 #r "nuget: CShell, 1.4.0"
-#r "nuget: MedallionShell, 1.5.1"
-#r "nuget: Newtonsoft.Json, 11.0.2"
+global using static CShellNet.Globals;
 
-using CShellNet;
-using Medallion.Shell;
-
-Main(Args).Wait();
-
-public async Task Main(IList<string> args)
+Console.WriteLine("Hello world!");
+foreach (var arg in Args)
 {
-    var shell = new CShell();
-    
-    foreach(var arg in args)
-    {
-        Console.WriteLine($"{arg}");
-    }
-    
-    StringBuilder sb = new StringBuilder();
-    sb.AppendLine("Test");
-    sb.AppendLine("yo");
-    sb.AppendLine("test3");
-
-    var result = await Cmd("findstr /N yo")
-        .RedirectFrom(sb.ToString())
-        .AsString();
-    Console.WriteLine(result);
-
-    shell.md("test");
-    shell.cd("test");
-    
-    for (int i = 0; i < 100; i++)
-    {
-        await File.WriteAllTextAsync(i.ToString(), i.ToString());
-        Console.WriteLine($"Creating: {i}");
-    }
-
-    foreach (var file in shell.CurrentFolder.GetFiles())
-    {
-        file.Delete();
-        Console.WriteLine($"Deleting: {file.FullName}");
-
-    shell.cd("..");
-    shell.rd("test");
-
-    Console.WriteLine("All done");
-}
-```
-
-If you don't want to have the *shell.* instance prefix, you can derive from CShell and have use the methods
-without a instance pointer, cleaning up your code:
-
-```CSharp
-#r "nuget: Newtonsoft.Json, 12.0.3"
-#r "nuget: MedallionShell, 1.6.1"
-#r "nuget: CShell, 1.4.0"
-
-using CShellNet;
-using System.Threading.Tasks;
-using Medallion.Shell;
-
-await new MyScript ().Main(Args);
-
-class MyScript : CShell
-{
-    public async Task Main(IList<string> args)
-    {
-        foreach (var arg in args)
-        {
-            Console.WriteLine($"{arg}");
-        }
-
-        StringBuilder sb = new StringBuilder();
-        sb.AppendLine("Test");
-        sb.AppendLine("yo");
-        sb.AppendLine("test3");
-
-        var result = await Run("findstr", "/N", "yo")
-            .RedirectFrom(sb.ToString())
-            .AsString();
-        Console.WriteLine(result);
-
-        md("test");
-        cd("test");
-
-        for (int i = 0; i < 100; i++)
-        {
-            await File.WriteAllTextAsync(i.ToString(), i.ToString());
-            Console.WriteLine($"Creating: {i}");
-        }
-
-        foreach (var file in this.CurrentFolder.GetFiles())
-        {
-            file.Delete();
-            Console.WriteLine($"Deleting: {file.FullName}");
-        }
-
-        cd("..");
-        rd("test");
-        Console.WriteLine("All done");
-    }
+    md(arg);
+    ...
 }
 ```
 
@@ -303,6 +185,7 @@ After registering you can simple type **your.csx** to execute your cshell progra
 ### V1.4.0
 * Added Start() method for detached processess (you can monitor process but not access input/output)
 * Added Run(Action<Option>, process, arg1, arg2) signature to control options for starting processes
+* Added CShellNet.Globals which enables flat .csx files
 
 ### V1.2.3
 * Added log parameters to AsJson()/AsXml()/AsResult() output standardOut/StandardError

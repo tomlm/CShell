@@ -1,16 +1,30 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.28010.2036
+# Visual Studio Version 17
+VisualStudioVersion = 17.10.35201.131
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CShell", "src\CShell.csproj", "{9705E191-6CF0-4F55-B3E2-C34A81A7FE28}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CShell.Tests", "Tests\CShell.Tests\CShell.Tests.csproj", "{3EC7173A-D8DB-4CFB-B63E-CBE688AD5C3D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CShell.Tests", "Tests\CShell.Tests\CShell.Tests.csproj", "{3EC7173A-D8DB-4CFB-B63E-CBE688AD5C3D}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{E8F4E9C2-526E-4C7C-AB2D-4455D1528BD6}"
 	ProjectSection(SolutionItems) = preProject
 		README.md = README.md
 	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "template", "template", "{D546EA45-4176-4B6A-98D7-B4A070611628}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "CShell.Template", "CShell.Template", "{4230593B-0690-4C20-9874-EACB3FB8A247}"
+	ProjectSection(SolutionItems) = preProject
+		template\CShell.Template\CShell.Template.nuspec = template\CShell.Template\CShell.Template.nuspec
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "content", "content", "{E18170B3-50F5-4686-BE7C-981A584E97F0}"
+	ProjectSection(SolutionItems) = preProject
+		template\CShell.Template\content\batch.csx = template\CShell.Template\content\batch.csx
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sample", "Sample\Sample.csproj", "{945CEB6E-0534-45AE-A63E-AE8F08A850CC}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -26,9 +40,17 @@ Global
 		{3EC7173A-D8DB-4CFB-B63E-CBE688AD5C3D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3EC7173A-D8DB-4CFB-B63E-CBE688AD5C3D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3EC7173A-D8DB-4CFB-B63E-CBE688AD5C3D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{945CEB6E-0534-45AE-A63E-AE8F08A850CC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{945CEB6E-0534-45AE-A63E-AE8F08A850CC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{945CEB6E-0534-45AE-A63E-AE8F08A850CC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{945CEB6E-0534-45AE-A63E-AE8F08A850CC}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{4230593B-0690-4C20-9874-EACB3FB8A247} = {D546EA45-4176-4B6A-98D7-B4A070611628}
+		{E18170B3-50F5-4686-BE7C-981A584E97F0} = {4230593B-0690-4C20-9874-EACB3FB8A247}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {F21757E8-6291-4BCC-AAF7-C9C0B805D67C}

@@ -1,9 +1,11 @@
 using CShellNet;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Threading.Tasks;
 
 namespace CShellLibTests
 {
@@ -153,6 +155,19 @@ namespace CShellLibTests
             Assert.IsTrue(File.Exists(path3));
 
             File.Delete(Path.Combine(testFolder, "test2.txt"));
+        }
+
+        [TestMethod]
+        public async Task Test_echo()
+        {
+            Environment.CurrentDirectory = testFolder;
+
+            var shell = new CShell();
+            var result = await shell.echo("test").AsString();
+            Assert.AreEqual("test", result);
+            var result2 = shell.echo(new string[] { "test1", "test2", "test3" });
+            var x = await result2.StandardOutput.ReadToEndAsync();
+            Assert.AreEqual("test1\r\ntest2\r\ntest3\r\n", x);
         }
 
         [TestMethod]

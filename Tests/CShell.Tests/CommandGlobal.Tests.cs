@@ -1,4 +1,5 @@
-using CShellNet;
+global using static CShellNet.Globals;
+global using CShellNet;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -9,22 +10,8 @@ using System.Threading.Tasks;
 
 namespace CShellLibTests
 {
-    public class TestRecord
-    {
-        public TestRecord()
-        {
-
-        }
-
-        [JsonProperty("name")]
-        public string Name { get; set; }
-
-        [JsonProperty("age")]
-        public int Age { get; set; }
-    }
-
     [TestClass]
-    public class CommandTests
+    public class CommandGlobalTests
     {
         private static string testFolder;
         private static string subFolder;
@@ -39,83 +26,81 @@ namespace CShellLibTests
         }
 
         [TestMethod]
-        public async Task Test_AsString()
+        public async Task Test_Global_AsString()
         {
-            CShell shell = new CShell();
-            shell.cd(testFolder);
+            ResetShell(testFolder);
 
-            var result = await shell.Run("cmd", "/c", "echo this is a yo yo").AsString();
+            var result = await Run("cmd", "/c", "echo this is a yo yo").AsString();
             Assert.AreEqual("this is a yo yo", result.Trim(), "AsString");
 
-            var record = await shell.ReadFile("TestA.txt").AsString();
+            var record = await ReadFile("TestA.txt").AsString();
             var text = File.ReadAllText(Path.Combine(testFolder, "TestA.Txt"));
             Assert.AreEqual(record, text, "AsString");
         }
 
         [TestMethod]
-        public async Task Test_AsJson()
+        public async Task Test_Global_AsJson()
         {
-            CShell shell = new CShell();
-            shell.cd(testFolder);
 
-            var record = await shell.ReadFile("TestA.txt").AsJson<TestRecord>();
+            ResetShell(testFolder);
+
+            var record = await ReadFile("TestA.txt").AsJson<TestRecord>();
             Assert.AreEqual("Joe Smith", record.Name, "name is wrong");
             Assert.AreEqual(42, record.Age, "age is wrong");
 
-            JObject record2 = (JObject)await shell.ReadFile("TestA.txt").AsJson();
+            JObject record2 = (JObject)await ReadFile("TestA.txt").AsJson();
             Assert.AreEqual("Joe Smith", (string)record2["name"], "JOBject name is wrong");
             Assert.AreEqual(42, (int)record2["age"], "JOBject age is wrong");
 
-            dynamic record3 = await shell.ReadFile("TestA.txt").AsJson();
+            dynamic record3 = await ReadFile("TestA.txt").AsJson();
             Assert.AreEqual("Joe Smith", (string)record3.name, "dynamic name is wrong");
             Assert.AreEqual(42, (int)record3.age, "dynamic age is wrong");
         }
 
 
         [TestMethod]
-        public async Task Test_AsXml()
+        public async Task Test_Global_AsXml()
         {
-            CShell shell = new CShell();
-            shell.cd(testFolder);
+            ResetShell(testFolder);
 
-            var record = await shell.ReadFile("TestB.txt").AsXml<TestRecord>();
+            var record = await ReadFile("TestB.txt").AsXml<TestRecord>();
             Assert.AreEqual("Joe Smith", record.Name, "name is wrong");
             Assert.AreEqual(42, record.Age, "age is wrong");
         }
 
         [TestMethod]
-        public async Task Test_AsResult()
+        public async Task Test_Global_AsResult()
         {
-            CShell shell = new CShell();
-            shell.ThrowOnError = false;
-            shell.cd(testFolder);
 
-            var result = await shell.ReadFile("TestA.txt").AsResult();
+            ThrowOnError = false;
+            ResetShell(testFolder);
+
+            var result = await ReadFile("TestA.txt").AsResult();
             var text = File.ReadAllText(Path.Combine(testFolder, "TestA.Txt"));
             Assert.AreEqual(text, result.StandardOutput, "result stdout");
             Assert.AreEqual("", result.StandardError, "result stderr");
 
 
-            var badResult = await shell.ReadFile("sdfsdffd.txt").AsResult();
+            var badResult = await ReadFile("sdfsdffd.txt").AsResult();
             Assert.AreEqual("", badResult.StandardOutput, "result stdout");
             Assert.AreEqual("The system cannot find the file specified.", badResult.StandardError.Trim(), "result stderr");
         }
 
         [TestMethod]
-        public async Task Test_AsFile()
+        public async Task Test_Global_AsFile()
         {
-            CShell shell = new CShell();
-            shell.ThrowOnError = false;
-            shell.cd(testFolder);
+
+            ThrowOnError = false;
+            ResetShell(testFolder);
 
             var tmpOut = Path.GetTempFileName();
             var tmpErr = Path.GetTempFileName();
 
-            var result = await shell.ReadFile("TestA.txt").AsFile(tmpOut);
+            var result = await ReadFile("TestA.txt").AsFile(tmpOut);
             var stdout = File.ReadAllText(tmpOut);
             Assert.AreEqual(stdout, result.StandardOutput, "result stdout");
 
-            var result2 = await shell.ReadFile("TestAsdfsdf.txt").AsFile(tmpOut, tmpErr);
+            var result2 = await ReadFile("TestAsdfsdf.txt").AsFile(tmpOut, tmpErr);
             var stdout2 = File.ReadAllText(tmpOut);
             var stderr2 = File.ReadAllText(tmpErr);
             Assert.AreEqual(stdout2, result2.StandardOutput, "result stdout");
@@ -123,14 +108,14 @@ namespace CShellLibTests
         }
 
         [TestMethod]
-        public async Task Test_Throw_AsJson()
+        public async Task Test_Global_Throw_AsJson()
         {
-            CShell shell = new CShell();
-            shell.cd(testFolder);
+
+            ResetShell(testFolder);
 
             try
             {
-                var record = await shell.Run("xyz").AsJson();
+                var record = await Run("xyz").AsJson();
                 Assert.Fail("Should have thrown");
             }
             catch (Exception err)
@@ -140,14 +125,14 @@ namespace CShellLibTests
         }
 
         [TestMethod]
-        public async Task Test_Throw_AsXml()
+        public async Task Test_Global_Throw_AsXml()
         {
-            CShell shell = new CShell();
-            shell.cd(testFolder);
+
+            ResetShell(testFolder);
 
             try
             {
-                var record = await shell.Run("xyz").AsXml<object>();
+                var record = await Run("xyz").AsXml<object>();
                 Assert.Fail("Should have thrown");
             }
             catch (Exception err)
@@ -157,14 +142,14 @@ namespace CShellLibTests
         }
 
         [TestMethod]
-        public async Task Test_Throw_AsString()
+        public async Task Test_Global_Throw_AsString()
         {
-            CShell shell = new CShell();
-            shell.cd(testFolder);
+
+            ResetShell(testFolder);
 
             try
             {
-                var record = await shell.Run("xyz").AsString();
+                var record = await Run("xyz").AsString();
                 Assert.Fail("Should have thrown");
             }
             catch (Exception err)
@@ -174,44 +159,43 @@ namespace CShellLibTests
         }
 
         [TestMethod]
-        public async Task Test_Cmd()
+        public async Task Test_Global_Cmd()
         {
-            CShell shell = new CShell();
-            shell.cd(testFolder);
-            var result = await shell.Cmd("dir /b TestA.txt").AsString();
+
+            ResetShell(testFolder);
+            var result = await Cmd("dir /b TestA.txt").AsString();
             Assert.AreEqual("TestA.txt", result.Trim(), "AsString");
         }
 
         [TestMethod]
-        public async Task Test_Bash()
+        public async Task Test_Global_Bash()
         {
-            CShell shell = new CShell();
-            shell.cd(testFolder);
-            var result = await shell.Bash("ls TestA.txt").AsString();
+
+            ResetShell(testFolder);
+            var result = await Bash("ls TestA.txt").AsString();
             Assert.AreEqual("TestA.txt", result.Trim(), "AsString");
         }
 
         [TestMethod]
-        public async Task Test_Start()
+        public async Task Test_Global_Start()
         {
-            CShell shell = new CShell();
-            shell.cd(testFolder);
-            var command = shell.Start("dotnet", "sleep.dll", "1000");
+            ResetShell(testFolder);
+            var command = Start("dotnet", "sleep.dll", "1000");
             Assert.IsFalse(command.Process.HasExited);
             await command.Task;
             Assert.IsTrue(command.Process.HasExited);
         }
 
         [TestMethod]
-        public async Task Test_StartExecute()
+        public async Task Test_Global_StartExecute()
         {
-            CShell shell = new CShell();
-            shell.cd(testFolder);
-            var result = await shell.Start("dotnet", "sleep.dll", "1000").Execute();
+
+            ResetShell(testFolder);
+            var result = await Start("dotnet", "sleep.dll", "1000").Execute();
             Assert.IsTrue(result.Success);
             try
             {
-                result = await shell.Start("xxxxxtest.cmd").Execute();
+                result = await Start("xxxxxtest.cmd").Execute();
                 Assert.Fail("Should have thrown execption)");
             }
             catch (Exception err)
@@ -221,23 +205,25 @@ namespace CShellLibTests
         }
 
         //[TestMethod]
-        //public async Task Test_StartKill()
+        //public async Task Test_Global_StartKill()
         //{
-        //    CShell shell = new CShell();
-        //    shell.cd(testFolder);
-        //    var command = shell.Start("dotnet", "sleep.dll", "1000");
-        //    Assert.IsFalse(command.Process.HasExited);
-        //    await Task.Delay(500);
-        //    command.Kill();
-        //    Assert.IsTrue(command.Process.HasExited);
+
+        //    ResetShell(testFolder);
+        //    using (var command = Start("dotnet", "sleep.dll", "1000"))
+        //    {
+        //        Assert.IsFalse(command.Process.HasExited);
+        //        await Task.Delay(500);
+        //        command.Kill();
+        //        Assert.IsTrue(command.Process.HasExited);
+        //    }
         //}
 
         [TestMethod]
-        public async Task Test_Log()
+        public async Task Test_Global_Log()
         {
-            CShell shell = new CShell();
-            shell.cd(testFolder);
-            var commandResult = await shell.Cmd("dir /b TestA.txt").Execute(true);
+
+            ResetShell(testFolder);
+            var commandResult = await Cmd("dir /b TestA.txt").Execute(true);
         }
 
     }
