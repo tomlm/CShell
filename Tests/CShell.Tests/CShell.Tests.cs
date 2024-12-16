@@ -1,7 +1,5 @@
-using CShellNet;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -37,6 +35,23 @@ namespace CShellLibTests
             Assert.AreEqual(subFolder, shell.FolderHistory[1], "history should be updated");
             Assert.AreEqual(testFolder, shell.FolderHistory[0], "history should be updated");
             Assert.AreEqual(2, shell.FolderHistory.Count(), "history should be two");
+        }
+
+
+        [TestMethod]
+        public void Test_Exists()
+        {
+            Environment.CurrentDirectory = testFolder;
+
+            CShell shell = new CShell();
+            Assert.IsFalse(shell.ExistsDirectory("foo"));
+            Assert.IsFalse(shell.ExistsFile("foo.txt"));
+            Assert.IsFalse(shell.Exists("foo.txt"));
+            Assert.IsFalse(shell.exists("foo.txt"));
+            Assert.IsTrue(shell.ExistsDirectory("subfolder"));
+            Assert.IsTrue(shell.ExistsFile("TestA.txt"));
+            Assert.IsTrue(shell.Exists("TestA.txt"));
+            Assert.IsTrue(shell.exists("TestA.txt"));
         }
 
         [TestMethod]

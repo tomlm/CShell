@@ -3,9 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using static System.Net.Mime.MediaTypeNames;
 
 namespace CShellNet
 {
@@ -429,6 +427,47 @@ namespace CShellNet
         }
 
         /// <summary>
+        /// returns true if path exists (file or folder)
+        /// </summary>
+        /// <param name="path"></param>
+        /// <returns></returns>
+        public bool exists(string path)
+            => Exists(path);
+
+        /// <summary>
+        /// Returns true if file or folder exists
+        /// </summary>
+        /// <param name="path">path</param>
+        /// <returns>true/false</returns>
+        public bool Exists(string path)
+        {
+            path = ResolvePath(path);
+            return File.Exists(path) || Directory.Exists(path);
+        }
+
+        /// <summary>
+        /// Returns true if file or folder exists
+        /// </summary>
+        /// <param name="path">path</param>
+        /// <returns>true/false</returns>
+        public bool ExistsFile(string path)
+        {
+            path = ResolvePath(path);
+            return File.Exists(path);
+        }
+
+        /// <summary>
+        /// Returns true if file or folder exists
+        /// </summary>
+        /// <param name="path">path</param>
+        /// <returns>true/false</returns>
+        public bool ExistsDirectory(string path)
+        {
+            path = ResolvePath(path);
+            return Directory.Exists(path);
+        }
+
+        /// <summary>
         /// Copy a Folder 
         /// </summary>
         /// <param name="sourceFolderPath">absolute or relative path to a source folder</param>
@@ -545,6 +584,7 @@ namespace CShellNet
         {
             return echo(textReader.ReadToEnd());
         }
+
 
         /// <summary>
         /// Resolve a path relative to CurrentFolder
