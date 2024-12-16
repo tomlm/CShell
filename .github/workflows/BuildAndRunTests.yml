@@ -6,11 +6,11 @@ on:
     branches:
       - main
     paths:
-    - source/**
+    - src/**
   pull_request:
     branches: [ "main" ]
     paths:
-    - source/**
+    - src/**
     
 jobs:
   build:
