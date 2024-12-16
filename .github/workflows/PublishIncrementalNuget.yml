@@ -2,11 +2,6 @@ name: Publish Incremental Nuget
 
 on:
   workflow_dispatch:
-#  push:
-#    branches:
-#    - main
-#    paths:
-#   - source/source/**
 
 jobs:
   build:
@@ -14,8 +9,6 @@ jobs:
     steps:
       - name: Checkout 
         uses: actions/checkout@v4
-        with:
-          path: CShell
   
       - name: Setup .NET
         uses: actions/setup-dotnet@v3
@@ -49,7 +42,6 @@ jobs:
           fail-if-exists: false
         
       - name: Commit new version changes
-        working-directory: ./CShell
         run: |
           git config --global user.name "Github Action"
           git config --global user.email "tomlm@users.noreply.github.com"
