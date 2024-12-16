@@ -26,10 +26,10 @@ jobs:
         dotnet-version: 8.0.x
 
     - name: Restore dependencies
-      run: dotnet restore src/CShell.sln 
+      run: dotnet restore CShell.sln 
 
     - name: Build
-      run: dotnet build --no-restore src/CShell.sln --property WarningLevel=0
+      run: dotnet build --no-restore CShell.sln --property WarningLevel=0
       
     - name: Test
-      run: dotnet test --no-build --verbosity normal src/CShell.sln
+      run: dotnet test --no-build --verbosity normal CShell.sln
