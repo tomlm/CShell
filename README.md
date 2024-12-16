@@ -175,6 +175,14 @@ dotnet script register
 
 After registering you can simple type **your.csx** to execute your cshell program.
 
+> NOTE: dotnet script register will fail if visual studio code has been installed, as it registers
+> itself as an editor for .csx files in a way that causes the dotnet script register command to not work correctly.
+> To fix this execute:
+> ```cmd
+> reg delete HKCU\Software\classes\.csx /f
+> dotnet script register
+> ```
+
 
 ## CHANGELOG
 
