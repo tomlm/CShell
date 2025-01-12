@@ -1,4 +1,4 @@
-name: Publish Templates To Nuger
+name: Publish Templates 
 
 on:
   workflow_dispatch:
@@ -12,7 +12,7 @@ jobs:
 
       - name: nuget pack 
         run: |
-          nuget pack template\CShell.Template\CShell.Template.nuspec -OutputDirectory packages
+          nuget pack template/CShell.Template/CShell.Template.nuspec -OutputDirectory packages
 
       - name: Publish NuGet and symbols
         id: nuget-push
