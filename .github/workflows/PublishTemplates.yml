@@ -1,0 +1,24 @@
+name: Publish Nuget
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout 
+        uses: actions/checkout@v4
+
+      - name: nuget pack 
+        run: |
+          nuget pack template\CShell.Template\CShell.Template.nuspec -OutputDirectory packages
+
+      - name: Publish NuGet and symbols
+        id: nuget-push
+        uses: edumserrano/nuget-push@v1
+        with:
+          api-key: '${{ secrets.NUGET_KEY }}' 
+          working-directory: 'packages'
+          fail-if-exists: false
+        
