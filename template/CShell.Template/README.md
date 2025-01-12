@@ -198,6 +198,9 @@ using CShellNet;
 
 ## CHANGELOG
 
+### V1.5.2
+* Added Exists() methods to global
+
 ### V1.5.0
 * Added Exists() methods
 

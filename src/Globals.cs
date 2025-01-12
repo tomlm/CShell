@@ -2,7 +2,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Threading.Tasks;
 
 namespace CShellNet
 {
@@ -273,6 +272,38 @@ namespace CShellNet
         /// <returns></returns>
         public static Command cat(string filePath)
             => _shell.cat(filePath);
+
+        /// <summary>
+        /// returns true if path exists (file or folder)
+        /// </summary>
+        /// <param name="path"></param>
+        /// <returns></returns>
+        public static bool exists(string path)
+            => Exists(path);
+
+        /// <summary>
+        /// Returns true if file or folder exists
+        /// </summary>
+        /// <param name="path">path</param>
+        /// <returns>true/false</returns>
+        public static bool Exists(string path)
+            => _shell.Exists(path);
+
+        /// <summary>
+        /// Returns true if file or folder exists
+        /// </summary>
+        /// <param name="path">path</param>
+        /// <returns>true/false</returns>
+        public static bool ExistsFile(string path)
+            => _shell.ExistsFile(path);
+
+        /// <summary>
+        /// Returns true if file or folder exists
+        /// </summary>
+        /// <param name="path">path</param>
+        /// <returns>true/false</returns>
+        public static bool ExistsDirectory(string path)
+            => _shell.ExistsDirectory(path);
 
         /// <summary>
         /// Copy a Folder 

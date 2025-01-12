@@ -125,7 +125,6 @@ namespace CShellLibTests
         public void Test_Global_rdRecursive()
         {
             ResetShell(testFolder);
-            ResetShell(testFolder);
 
             string xyz = Path.Combine(testFolder, "xyz");
             if (Directory.Exists(xyz))
@@ -152,7 +151,6 @@ namespace CShellLibTests
             ResetShell(testFolder);
 
 
-            ResetShell(testFolder);
             File.WriteAllText(Path.Combine(CurrentFolder.FullName, "test.txt"), "test");
 
             move("test.txt", subFolder);
@@ -173,7 +171,6 @@ namespace CShellLibTests
             ResetShell(testFolder);
 
 
-            ResetShell(testFolder);
             File.WriteAllText(Path.Combine(CurrentFolder.FullName, "test.txt"), "test");
 
             copy("test.txt", subFolder);
@@ -196,7 +193,6 @@ namespace CShellLibTests
             ResetShell(testFolder);
 
 
-            ResetShell(testFolder);
             if (Directory.Exists(ResolvePath("test2")))
                 rd("test2", recursive: true);
 
@@ -210,6 +206,23 @@ namespace CShellLibTests
 
             rd("test3", recursive: true);
         }
+
+
+        [TestMethod]
+        public void Test_Global_Exists()
+        {
+            ResetShell(testFolder);
+
+            Assert.IsFalse(ExistsDirectory("foo"));
+            Assert.IsFalse(ExistsFile("foo.txt"));
+            Assert.IsFalse(Exists("foo.txt"));
+            Assert.IsFalse(Exists("foo.txt"));
+            Assert.IsTrue(ExistsDirectory("subfolder"));
+            Assert.IsTrue(ExistsFile("TestA.txt"));
+            Assert.IsTrue(Exists("TestA.txt"));
+            Assert.IsTrue(exists("TestA.txt"));
+        }
+
     }
 
 }

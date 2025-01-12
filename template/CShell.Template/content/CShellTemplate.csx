@@ -1,5 +1,5 @@
 #!/usr/bin/env dotnet-script
-#r "nuget: CShell, 1.5.0"
+#r "nuget: CShell, 1.5.2"
 global using static CShellNet.Globals;
 using CShellNet;
 
