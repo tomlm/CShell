@@ -1,15 +1,32 @@
 {
-    "$schema": "http://json.schemastore.org/template",
-    "author": "Tom Laird-McConnell",
-    "classifications": [
-        "Common",
-        "Console"
-    ],
-    "identity": "CShell.Template",
-    "name": "CShell script template",
-    "shortName": "cshell",
-    "tags": {
-        "language": "C#",
-        "type": "item"
+  "$schema": "http://json.schemastore.org/template",
+  "author": "Tom Laird-McConnell",
+  "classifications": [
+    "Common",
+    "Console"
+  ],
+  "identity": "CShell.Template",
+  "name": "CShell script template",
+  "shortName": "cshell",
+  "sourceName": "CShellTemplate",
+  "tags": {
+    "language": "C#",
+    "type": "item"
+  },
+  "postActions": [
+    {
+      "condition": "(OS != \"Windows_NT\")",
+      "description": "Make scripts executable",
+      "manualInstructions": [
+        {
+          "text": "Run 'chmod +x CShellTemplate'"
+        }
+      ],
+      "actionId": "cb9a6cf3-4f5c-4860-b9d2-03a574959774",
+      "args": {
+        "+x": [ "*", "*.csx" ]
+      },
+      "continueOnError": true
     }
+  ]
 }

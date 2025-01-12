@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+BASEDIR=$(dirname $BASH_SOURCE)
+dotnet script $BASEDIR/CShellTemplate.csx
+

@@ -12,18 +12,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		README.md = README.md
 	EndProjectSection
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "template", "template", "{D546EA45-4176-4B6A-98D7-B4A070611628}"
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "CShell.Template", "CShell.Template", "{4230593B-0690-4C20-9874-EACB3FB8A247}"
-	ProjectSection(SolutionItems) = preProject
-		template\CShell.Template\CShell.Template.nuspec = template\CShell.Template\CShell.Template.nuspec
-	EndProjectSection
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "content", "content", "{E18170B3-50F5-4686-BE7C-981A584E97F0}"
-	ProjectSection(SolutionItems) = preProject
-		template\CShell.Template\content\batch.csx = template\CShell.Template\content\batch.csx
-	EndProjectSection
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sample", "Sample\Sample.csproj", "{945CEB6E-0534-45AE-A63E-AE8F08A850CC}"
 EndProject
 Global
@@ -47,10 +35,6 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
-	EndGlobalSection
-	GlobalSection(NestedProjects) = preSolution
-		{4230593B-0690-4C20-9874-EACB3FB8A247} = {D546EA45-4176-4B6A-98D7-B4A070611628}
-		{E18170B3-50F5-4686-BE7C-981A584E97F0} = {4230593B-0690-4C20-9874-EACB3FB8A247}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {F21757E8-6291-4BCC-AAF7-C9C0B805D67C}
