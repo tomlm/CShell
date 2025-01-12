@@ -1,4 +1,4 @@
-name: Publish Nuget
+name: Publish Templates To Nuger
 
 on:
   workflow_dispatch:
