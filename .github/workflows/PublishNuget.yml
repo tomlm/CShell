@@ -28,9 +28,9 @@ jobs:
         run: |
           dotnet pack --no-build CShell.sln -c Release -o packages --include-symbols --property WarningLevel=0
 
-      - name: nuget pack template
-        run: |
-          nuget pack template/CShell.Template/CShell.Template.nuspec -OutputDirectory packages
+      #- name: nuget pack template
+      #  run: |
+      #    nuget pack template/CShell.Template/CShell.Template.nuspec -OutputDirectory packages
 
       - name: Publish NuGet and symbols
         id: nuget-push
