@@ -187,7 +187,8 @@ After registering you can simple type **your.csx** to execute your cshell progra
 On Linux/Mac you can make a .csx file executable by
 1. adding a shebang line at the top of the file 
 2. running **chmod +x {yourfile}.csx**.
-3. Make sure it has unix line endings (LF \n) not windows (CRLF \r\n) line endings
+3. running **dos2unix {yourfile}.csx** to make sure it has unix line endings (LF \n) not windows (CRLF \r\n) line endings
+
 ```bash
 #!/usr/bin/env dotnet-script
 #r "nuget: CShell, 1.5.0"

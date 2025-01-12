@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2012/06/nuspec.xsd">
   <metadata>
     <id>CShell.Template</id>
-    <version>1.5.0</version>
+    <version>1.5.1</version>
     <description>Creates CShell csx script</description>
     <license type="expression">MIT</license>
     <authors>Tom Laird-McConnell</authors>

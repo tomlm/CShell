@@ -49,7 +49,7 @@ to manipulate files.
 | **move()**   | Move a file relative to current folder       |
 | **rename()** | Move a file relative to current folder       |
 | **delete()** | Delete a file relative to current folder     |
-| **erase()**  | does a file relative to current folder exist |
+| **exists()** | does a file relative to current folder exist |
 | **type()**   | type a file to standardout                   |
 | **cat()**    | cat a file to standardout                    |
 
@@ -154,7 +154,7 @@ To invoke the template
 > NOTE: If you want debug support from visual studio code simply run **dotnet script init** in the same folder.
 
 ```csharp
-#r "nuget: CShell, 1.4.0"
+#r "nuget: CShell, 1.5.0"
 global using static CShellNet.Globals;
 using CShellNet;
 
@@ -175,8 +175,31 @@ dotnet script register
 
 After registering you can simple type **your.csx** to execute your cshell program.
 
+> NOTE: dotnet script register will fail if visual studio code has been installed, as it registers
+> itself as an editor for .csx files in a way that causes the dotnet script register command to not work correctly.
+> To fix this execute:
+> ```cmd
+> reg delete HKCU\Software\classes\.csx /f
+> dotnet script register
+> ```
+
+### Registering .csx files to be executable on MacOS/Linux
+On Linux/Mac you can make a .csx file executable by
+1. adding a shebang line at the top of the file 
+2. running **chmod +x {yourfile}.csx**.
+3. running **dos2unix {yourfile}.csx** to make sure it has unix line endings (LF \n) not windows (CRLF \r\n) line endings
+
+```bash
+#!/usr/bin/env dotnet-script
+#r "nuget: CShell, 1.5.0"
+global using static CShellNet.Globals;
+using CShellNet;
+```
 
 ## CHANGELOG
+
+### V1.5.0
+* Added Exists() methods
 
 ### V1.4.0
 * Added Start() method for detached processess (you can monitor process but not access input/output)
