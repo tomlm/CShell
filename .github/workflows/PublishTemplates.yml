@@ -9,7 +9,10 @@ jobs:
     steps:
       - name: Checkout 
         uses: actions/checkout@v4
-
+      
+      - name: Setup NuGet.exe for use with actions
+        uses: NuGet/setup-nuget@v2.0.0
+        
       - name: nuget pack 
         run: |
           nuget pack template/CShell.Template/CShell.Template.nuspec -OutputDirectory packages
