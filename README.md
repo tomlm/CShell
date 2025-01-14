@@ -196,6 +196,28 @@ global using static CShellNet.Globals;
 using CShellNet;
 ```
 
+### Short cut alias files 
+Visual Studio Code requires the script file to have .csx extension, but you can create an alias wrapper for the script file
+to make it that it can be invoked without the .csx extension.
+
+#### Creating an script alias on Windows 
+To create an alias for **example.csx** on Windows simply create a file **example.cmd**
+```cmd
+@dotnet script %~dp0\example.csx
+```
+
+#### Creating an script alias on Linux/MacOS
+To create an alias for **example.csx** on Linux/MacOS simply create a file **example**
+```bash
+#!/usr/bin/env bash
+BASEDIR=$(dirname $BASH_SOURCE)
+dotnet script $BASEDIR/example.csx
+```
+and mark it as executable
+```bash
+chmod +x example.csx
+```
+
 ## CHANGELOG
 
 ### V1.5.2
