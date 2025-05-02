@@ -36,6 +36,7 @@ to manipulate folders.
 | **cd()**    | Change the current folder with relative or absolute path                     |
 | **md()**    | Create a folder relative to current folder                                   |
 | **rd()**    | Delete a folder relative to current folder                                   |
+| **dir()**   | list folders folder relative to current folder                               |
 | **pushd()** | Push the current folder onto the stack and change folder to the new one      |
 | **popd()**  | Pop the current folder off the stack and change the folder the popped folder |
 
@@ -65,7 +66,7 @@ to make it even easier to work with the output of processes.
 | **echo(text/lines/stream)** | echo text,lines from memory to a stream                                                 |
 | **Run(program, arg1, ..., argN)**    | run a program directly with the given args (aka Process.Start(program, args) |
 | **Start(program, arg1, ..., argN)**    | run a DETACHED program directly with the given args (aka Process.Start(program, args)|
-| **Cmd(cmd)**  | run the cmd inside a cmd.exe, allow you to execute shell commands (like dir /b *.*                  |
+| **Cmd(cmd)**  | run the cmd inside a cmd.exe, allow you to execute shell commands                   |
 | **Bash(bash)**  | run the program in bash environment, allow you to execute bash shell commands (like ls -al *      |
 
 ```CSharp
@@ -197,6 +198,10 @@ using CShellNet;
 ```
 
 ## CHANGELOG
+
+### V2.0.0
+* dir() didn't return full path. Fixing this is a breaking change in behavior so bumped to 2.0
+* Global methods
 
 ### V1.5.2
 * Added Exists() methods to global

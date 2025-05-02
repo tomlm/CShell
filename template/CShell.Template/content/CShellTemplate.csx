@@ -1,5 +1,5 @@
 #!/usr/bin/env dotnet-script
-#r "nuget: CShell, 1.5.2"
+#r "nuget: CShell, 2.0.0"
 global using static CShellNet.Globals;
 using CShellNet;
 
@@ -15,8 +15,6 @@ using CShellNet;
 // NOTE: To make this debuggable in visual studio code, simply run
 //      dotnet script init
 // command in this folder.  This will make it so you can set breakpoints in any .csx file in this folder and step through the script
-
-Console.WriteLine("Hello world!");
 
 foreach (var arg in Args)
 {
