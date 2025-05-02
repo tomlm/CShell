@@ -173,6 +173,48 @@ namespace CShellLibTests
         }
 
         [TestMethod]
+        public void Test_dir()
+        {
+            Environment.CurrentDirectory = testFolder;
+
+            CShell shell = new CShell();
+            var result = shell.dir();
+            Assert.IsTrue(Path.IsPathFullyQualified(result.First()), "Path should be fully qualified");
+            Assert.IsTrue(result.Where(path => Path.GetFileName(path) == "TestA.txt").Any(), "TestA.txt not found");
+            Assert.IsTrue(result.Where(path => Path.GetFileName(path) == "TestB.txt").Any(), "TestB.txt not found");
+            Assert.IsFalse(result.Where(path => Path.GetFileName(path) == "TestC.txt").Any(), "TestC.txt should not found");
+            Assert.IsFalse(result.Where(path => Path.GetFileName(path) == "TestD.txt").Any(), "TestD.txt should not found");
+        }
+
+        [TestMethod]
+        public void Test_dir_recursive()
+        {
+            Environment.CurrentDirectory = testFolder;
+
+            CShell shell = new CShell();
+            var result = shell.dir(recursive: true);
+            Assert.IsTrue(Path.IsPathFullyQualified(result.First()), "Path should be fully qualified");
+            Assert.IsTrue(result.Where(path => Path.GetFileName(path) == "TestA.txt").Any(), "TestA.txt not found");
+            Assert.IsTrue(result.Where(path => Path.GetFileName(path) == "TestB.txt").Any(), "TestB.txt not found");
+            Assert.IsTrue(result.Where(path => Path.GetFileName(path) == "TestC.txt").Any(), "TestC.txt not found");
+            Assert.IsTrue(result.Where(path => Path.GetFileName(path) == "TestD.txt").Any(), "TestD.txt not found");
+        }
+
+        [TestMethod]
+        public void Test_dir_filtered()
+        {
+            Environment.CurrentDirectory = testFolder;
+
+            CShell shell = new CShell();
+            var result = shell.dir("*estC.txt", recursive: true);
+            Assert.IsTrue(Path.IsPathFullyQualified(result.First()), "Path should be fully qualified");
+            Assert.IsFalse(result.Where(path => Path.GetFileName(path) == "TestA.txt").Any(), "TestA.txt not found");
+            Assert.IsFalse(result.Where(path => Path.GetFileName(path) == "TestB.txt").Any(), "TestB.txt not found");
+            Assert.IsTrue(result.Where(path => Path.GetFileName(path) == "TestC.txt").Any(), "TestC.txt not found");
+            Assert.IsFalse(result.Where(path => Path.GetFileName(path) == "TestD.txt").Any(), "TestD.txt not found");
+        }
+
+        [TestMethod]
         public async Task Test_echo()
         {
             Environment.CurrentDirectory = testFolder;
@@ -226,7 +268,7 @@ namespace CShellLibTests
             Assert.IsTrue(File.Exists(Path.Combine(testFolder, "test3", "TestC.txt")));
             Assert.IsTrue(File.Exists(Path.Combine(testFolder, "test3", "subfolder2", "TestE.txt")));
 
-            shell.rd("test3", recursive:true);
+            shell.rd("test3", recursive: true);
         }
     }
 

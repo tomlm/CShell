@@ -344,7 +344,7 @@ namespace CShellNet
         public IEnumerable<string> dir(string searchPattern = null, bool recursive = false)
         {
             return this.CurrentFolder.EnumerateFileSystemInfos(searchPattern ?? "*", (recursive) ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly)
-                .Select(fileInfo => fileInfo.Name);
+                .Select(fileInfo => this.ResolvePath(fileInfo.FullName));
         }
 
         /// <summary>
