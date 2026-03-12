@@ -54,6 +54,20 @@ to manipulate files.
 | **type()**   | type a file to standardout                   |
 | **cat()**    | cat a file to standardout                    |
 
+### Output methods
+CShell defines helper methods for sending output to standard out and standard error streams.
+| Method           | Description                                                                                      |
+|------------------|--------------------------------------------------------------------------------------------------|
+| **Write(...)** | Alias for Console.Write() |
+| **WriteLine(...)** | Alias for Console.WriteLine() |
+| **print(...)** | alias for Console.WriteLine() |
+| **error(...)** | alias for Console.Out.WriteLine()  |
+
+```CSharp
+WriteLine(13);
+print("Hello world!");
+error("ohoh!");
+```
 
 ### Process Methods
 CShell is built using [MedallionShell](https://github.com/madelson/MedallionShell), which provides a great set of functionality for easily invoking 
@@ -64,10 +78,6 @@ to make it even easier to work with the output of processes.
 |------------------|--------------------------------------------------------------------------------------------------|
 | **ReadFile()/cat()/type()**  | read a file and create a stream                                                        |
 | **echo(text/lines/stream)** | echo text,lines from memory to a stream                                                 |
-| **Write(...)** | Alias for Console.Write() |
-| **WriteLine(...)** | Alias for Console.WriteLine() |
-| **print(...)** | alias for Console.WriteLine() |
-| **error(...)** | alias for Console.Out.WriteLine()  |
 | **Run(program, arg1, ..., argN)**    | run a program directly with the given args (aka Process.Start(program, args) |
 | **Start(program, arg1, ..., argN)**    | run a DETACHED program directly with the given args (aka Process.Start(program, args)|
 | **Cmd(cmd)**  | run the cmd inside a cmd.exe, allow you to execute shell commands (like dir /b *.*                  |
@@ -200,8 +210,6 @@ On Linux/Mac you can make a .csx file executable by
 global using static CShellNet.Globals;
 using CShellNet;
 ```
-
-### 
 
 ### Short cut alias files 
 Visual Studio Code requires the script file to have .csx extension, but you can create an alias wrapper for the script file
