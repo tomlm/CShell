@@ -169,7 +169,7 @@ To invoke the template
 > NOTE: If you want debug support from visual studio code simply run **dotnet script init** in the same folder.
 
 ```csharp
-#r "nuget: CShell, 1.5.0"
+#r "nuget: CShell, 2.1.0"
 global using static CShellNet.Globals;
 using CShellNet;
 
