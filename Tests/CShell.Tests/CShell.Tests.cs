@@ -228,6 +228,40 @@ namespace CShellLibTests
         }
 
         [TestMethod]
+        public void Test_Write_WriteLine_print_and_error()
+        {
+            Environment.CurrentDirectory = testFolder;
+
+            var shell = new CShell();
+            var stdout = new StringWriter();
+            var stderr = new StringWriter();
+            var originalOut = Console.Out;
+            var originalError = Console.Error;
+
+            try
+            {
+                Console.SetOut(stdout);
+                Console.SetError(stderr);
+
+                shell.Write("Hello world");
+                shell.WriteLine(13);
+                shell.print("printed");
+                shell.error("failed");
+                shell.WriteLine("{0}-{1}-{2}", 1, 2, 3);
+
+                Assert.AreEqual($"Hello world13{Environment.NewLine}printed{Environment.NewLine}1-2-3{Environment.NewLine}", stdout.ToString());
+                Assert.AreEqual($"failed{Environment.NewLine}", stderr.ToString());
+            }
+            finally
+            {
+                Console.SetOut(originalOut);
+                Console.SetError(originalError);
+                stdout.Dispose();
+                stderr.Dispose();
+            }
+        }
+
+        [TestMethod]
         public void Test_copy()
         {
             Environment.CurrentDirectory = testFolder;

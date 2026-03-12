@@ -145,6 +145,503 @@ namespace CShellNet
             => _shell.echo(textReader);
 
         /// <summary>
+        /// Write value to standard out
+        /// </summary>
+        /// <param name="value"></param>
+        public static void Write(string value)
+            => _shell.Write(value);
+
+        /// <summary>
+        /// Write value to standard out
+        /// </summary>
+        /// <param name="value"></param>
+        public static void Write(bool value)
+            => _shell.Write(value);
+
+        /// <summary>
+        /// Write value to standard out
+        /// </summary>
+        /// <param name="value"></param>
+        public static void Write(char value)
+            => _shell.Write(value);
+
+        /// <summary>
+        /// Write value to standard out
+        /// </summary>
+        /// <param name="value"></param>
+        public static void Write(char[] buffer)
+            => _shell.Write(buffer);
+
+        /// <summary>
+        /// Write value to standard out
+        /// </summary>
+        /// <param name="value"></param>
+        public static void Write(double value)
+            => _shell.Write(value);
+
+        /// <summary>
+        /// Write value to standard out
+        /// </summary>
+        /// <param name="value"></param>
+        public static void Write(decimal value)
+            => _shell.Write(value);
+
+        /// <summary>
+        /// Write value to standard out
+        /// </summary>
+        /// <param name="value"></param>
+        public static void Write(object value)
+            => _shell.Write(value);
+
+        /// <summary>
+        /// Write value to standard out
+        /// </summary>
+        /// <param name="value"></param>
+        public static void Write(int value)
+            => _shell.Write(value);
+
+        /// <summary>
+        /// Write value to standard out
+        /// </summary>
+        /// <param name="value"></param>
+        public static void Write(uint value)
+            => _shell.Write(value);
+
+        /// <summary>
+        /// Write value to standard out
+        /// </summary>
+        /// <param name="value"></param>
+        public static void Write(long value)
+            => _shell.Write(value);
+
+        /// <summary>
+        /// Write value to standard out
+        /// </summary>
+        /// <param name="value"></param>
+        public static void Write(ulong value)
+            => _shell.Write(value);
+
+        /// <summary>
+        /// Write value to standard out
+        /// </summary>
+        /// <param name="value"></param>
+        public static void Write(float value)
+            => _shell.Write(value);
+
+        /// <summary>
+        /// Write value to standard out
+        /// </summary>
+        /// <param name="value"></param>
+        public static void Write(string format, object arg0)
+            => _shell.Write(format, arg0);
+
+        /// <summary>
+        /// Write value to standard out
+        /// </summary>
+        /// <param name="value"></param>
+        public static void Write(string format, params object[] arg)
+            => _shell.Write(format, arg);
+
+        /// <summary>
+        /// Write value to standard out
+        /// </summary>
+        /// <param name="value"></param>
+        public static void Write(string format, object arg0, object arg1)
+            => _shell.Write(format, arg0, arg1);
+
+        /// <summary>
+        /// Write value to standard out
+        /// </summary>
+        /// <param name="value"></param>
+        public static void Write(char[] buffer, int index, int count)
+            => _shell.Write(buffer, index, count);
+
+        /// <summary>
+        /// Write value to standard out
+        /// </summary>
+        /// <param name="value"></param>
+        public static void Write(string format, object arg0, object arg1, object arg2)
+            => _shell.Write(format, arg0, arg1, arg2);
+
+        /// <summary>
+        /// Write value as line to standard out
+        /// </summary>
+        /// <param name="value"></param>
+        public static void WriteLine()
+            => _shell.WriteLine();
+
+        /// <summary>
+        /// Write value as line to standard out
+        /// </summary>
+        /// <param name="value"></param>
+        public static void WriteLine(int value)
+            => _shell.WriteLine(value);
+
+        /// <summary>
+        /// Write value as line to standard out
+        /// </summary>
+        /// <param name="value"></param>
+        public static void WriteLine(bool value)
+            => _shell.WriteLine(value);
+
+        /// <summary>
+        /// Write value as line to standard out
+        /// </summary>
+        /// <param name="value"></param>
+        public static void WriteLine(char value)
+            => _shell.WriteLine(value);
+
+        /// <summary>
+        /// Write value as line to standard out
+        /// </summary>
+        /// <param name="value"></param>
+        public static void WriteLine(string value)
+            => _shell.WriteLine(value);
+
+        /// <summary>
+        /// Write value as line to standard out
+        /// </summary>
+        /// <param name="value"></param>
+        public static void WriteLine(object value)
+            => _shell.WriteLine(value);
+
+        /// <summary>
+        /// Write value as line to standard out
+        /// </summary>
+        /// <param name="value"></param>
+        public static void WriteLine(ulong value)
+            => _shell.WriteLine(value);
+
+        /// <summary>
+        /// Write value as line to standard out
+        /// </summary>
+        /// <param name="value"></param>
+        public static void WriteLine(long value)
+            => _shell.WriteLine(value);
+
+        /// <summary>
+        /// Write value as line to standard out
+        /// </summary>
+        /// <param name="value"></param>
+        public static void WriteLine(uint value)
+            => _shell.WriteLine(value);
+
+        /// <summary>
+        /// Write value as line to standard out
+        /// </summary>
+        /// <param name="value"></param>
+        public static void WriteLine(char[] buffer)
+            => _shell.WriteLine(buffer);
+
+        /// <summary>
+        /// Write value as line to standard out
+        /// </summary>
+        /// <param name="value"></param>
+        public static void WriteLine(float value)
+            => _shell.WriteLine(value);
+
+        /// <summary>
+        /// Write value as line to standard out
+        /// </summary>
+        /// <param name="value"></param>
+        public static void WriteLine(double value)
+            => _shell.WriteLine(value);
+
+        /// <summary>
+        /// Write value as line to standard out
+        /// </summary>
+        /// <param name="value"></param>
+        public static void WriteLine(decimal value)
+            => _shell.WriteLine(value);
+
+        /// <summary>
+        /// Write value as line to standard out
+        /// </summary>
+        /// <param name="value"></param>
+        public static void WriteLine(string format, params object[] arg)
+            => _shell.WriteLine(format, arg);
+
+        /// <summary>
+        /// Write value as line to standard out
+        /// </summary>
+        /// <param name="value"></param>
+        public static void WriteLine(string format, object arg0)
+            => _shell.WriteLine(format, arg0);
+
+        /// <summary>
+        /// Write value as line to standard out
+        /// </summary>
+        /// <param name="value"></param>
+        public static void WriteLine(string format, object arg0, object arg1)
+            => _shell.WriteLine(format, arg0, arg1);
+
+        /// <summary>
+        /// Write value as line to standard out
+        /// </summary>
+        /// <param name="value"></param>
+        public static void WriteLine(char[] buffer, int index, int count)
+            => _shell.WriteLine(buffer, index, count);
+
+        /// <summary>
+        /// Write value as line to standard out
+        /// </summary>
+        /// <param name="value"></param>
+        public static void WriteLine(string format, object arg0, object arg1, object arg2)
+            => _shell.WriteLine(format, arg0, arg1, arg2);
+
+        /// <summary>
+        /// Write value as line to standard out
+        /// </summary>
+        /// <param name="value"></param>
+        public static void print()
+            => _shell.print();
+
+        /// <summary>
+        /// Write value as line to standard out
+        /// </summary>
+        /// <param name="value"></param>
+        public static void print(int value)
+            => _shell.print(value);
+
+        /// <summary>
+        /// Write value as line to standard out
+        /// </summary>
+        /// <param name="value"></param>
+        public static void print(bool value)
+            => _shell.print(value);
+
+        /// <summary>
+        /// Write value as line to standard out
+        /// </summary>
+        /// <param name="value"></param>
+        public static void print(char value)
+            => _shell.print(value);
+
+        /// <summary>
+        /// Write value as line to standard out
+        /// </summary>
+        /// <param name="value"></param>
+        public static void print(string value)
+            => _shell.print(value);
+
+        /// <summary>
+        /// Write value as line to standard out
+        /// </summary>
+        /// <param name="value"></param>
+        public static void print(object value)
+            => _shell.print(value);
+
+        /// <summary>
+        /// Write value as line to standard out
+        /// </summary>
+        /// <param name="value"></param>
+        public static void print(ulong value)
+            => _shell.print(value);
+
+        /// <summary>
+        /// Write value as line to standard out
+        /// </summary>
+        /// <param name="value"></param>
+        public static void print(long value)
+            => _shell.print(value);
+
+        /// <summary>
+        /// Write value as line to standard out
+        /// </summary>
+        /// <param name="value"></param>
+        public static void print(uint value)
+            => _shell.print(value);
+
+        /// <summary>
+        /// Write value as line to standard out
+        /// </summary>
+        /// <param name="value"></param>
+        public static void print(char[] buffer)
+            => _shell.print(buffer);
+
+        /// <summary>
+        /// Write value as line to standard out
+        /// </summary>
+        /// <param name="value"></param>
+        public static void print(float value)
+            => _shell.print(value);
+
+        /// <summary>
+        /// Write value as line to standard out
+        /// </summary>
+        /// <param name="value"></param>
+        public static void print(double value)
+            => _shell.print(value);
+
+        /// <summary>
+        /// Write value as line to standard out
+        /// </summary>
+        /// <param name="value"></param>
+        public static void print(decimal value)
+            => _shell.print(value);
+
+        /// <summary>
+        /// Write value as line to standard out
+        /// </summary>
+        /// <param name="value"></param>
+        public static void print(string format, params object[] arg)
+            => _shell.print(format, arg);
+
+        /// <summary>
+        /// Write value as line to standard out
+        /// </summary>
+        /// <param name="value"></param>
+        public static void print(string format, object arg0)
+            => _shell.print(format, arg0);
+
+        /// <summary>
+        /// Write value as line to standard out
+        /// </summary>
+        /// <param name="value"></param>
+        public static void print(string format, object arg0, object arg1)
+            => _shell.print(format, arg0, arg1);
+
+        /// <summary>
+        /// Write value as line to standard out
+        /// </summary>
+        /// <param name="value"></param>
+        public static void print(char[] buffer, int index, int count)
+            => _shell.print(buffer, index, count);
+
+        /// <summary>
+        /// Write value as line to standard out
+        /// </summary>
+        /// <param name="value"></param>
+        public static void print(string format, object arg0, object arg1, object arg2)
+            => _shell.print(format, arg0, arg1, arg2);
+
+        /// <summary>
+        /// Write value as line to standard error
+        /// </summary>
+        /// <param name="value"></param>
+        public static void error()
+            => _shell.error();
+
+        /// <summary>
+        /// Write value as line to standard error
+        /// </summary>
+        /// <param name="value"></param>
+        public static void error(int value)
+            => _shell.error(value);
+
+        /// <summary>
+        /// Write value as line to standard error
+        /// </summary>
+        /// <param name="value"></param>
+        public static void error(bool value)
+            => _shell.error(value);
+
+        /// <summary>
+        /// Write value as line to standard error
+        /// </summary>
+        /// <param name="value"></param>
+        public static void error(char value)
+            => _shell.error(value);
+
+        /// <summary>
+        /// Write value as line to standard error
+        /// </summary>
+        /// <param name="value"></param>
+        public static void error(string value)
+            => _shell.error(value);
+
+        /// <summary>
+        /// Write value as line to standard error
+        /// </summary>
+        /// <param name="value"></param>
+        public static void error(object value)
+            => _shell.error(value);
+
+        /// <summary>
+        /// Write value as line to standard error
+        /// </summary>
+        /// <param name="value"></param>
+        public static void error(ulong value)
+            => _shell.error(value);
+
+        /// <summary>
+        /// Write value as line to standard error
+        /// </summary>
+        /// <param name="value"></param>
+        public static void error(long value)
+            => _shell.error(value);
+
+        /// <summary>
+        /// Write value as line to standard error
+        /// </summary>
+        /// <param name="value"></param>
+        public static void error(uint value)
+            => _shell.error(value);
+
+        /// <summary>
+        /// Write value as line to standard error
+        /// </summary>
+        /// <param name="value"></param>
+        public static void error(char[] buffer)
+            => _shell.error(buffer);
+
+        /// <summary>
+        /// Write value as line to standard error
+        /// </summary>
+        /// <param name="value"></param>
+        public static void error(float value)
+            => _shell.error(value);
+
+        /// <summary>
+        /// Write value as line to standard error
+        /// </summary>
+        /// <param name="value"></param>
+        public static void error(double value)
+            => _shell.error(value);
+
+        /// <summary>
+        /// Write value as line to standard error
+        /// </summary>
+        /// <param name="value"></param>
+        public static void error(decimal value)
+            => _shell.error(value);
+
+        /// <summary>
+        /// Write value as line to standard error
+        /// </summary>
+        /// <param name="value"></param>
+        public static void error(string format, params object[] arg)
+            => _shell.error(format, arg);
+
+        /// <summary>
+        /// Write value as line to standard error
+        /// </summary>
+        /// <param name="value"></param>
+        public static void error(string format, object arg0)
+            => _shell.error(format, arg0);
+
+        /// <summary>
+        /// Write value as line to standard error
+        /// </summary>
+        /// <param name="value"></param>
+        public static void error(string format, object arg0, object arg1)
+            => _shell.error(format, arg0, arg1);
+
+        /// <summary>
+        /// Write value as line to standard error
+        /// </summary>
+        /// <param name="value"></param>
+        public static void error(char[] buffer, int index, int count)
+            => _shell.error(buffer, index, count);
+
+        /// <summary>
+        /// Write value as line to standard error
+        /// </summary>
+        /// <param name="value"></param>
+        public static void error(string format, object arg0, object arg1, object arg2)
+            => _shell.error(format, arg0, arg1, arg2);
+
+        /// <summary>
         /// copy file or folder 
         /// </summary>
         /// <param name="sourcePath">absolute or relative path to a source file or folder</param>

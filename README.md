@@ -38,6 +38,7 @@ to manipulate folders.
 | **rd()**    | Delete a folder relative to current folder                                   |
 | **pushd()** | Push the current folder onto the stack and change folder to the new one      |
 | **popd()**  | Pop the current folder off the stack and change the folder the popped folder |
+| **exists()** | does a folder relative to current folder exist |
 
 ### File Methods
 CShell defines a number of methods which work relative to the current folder to make it easy
@@ -63,6 +64,10 @@ to make it even easier to work with the output of processes.
 |------------------|--------------------------------------------------------------------------------------------------|
 | **ReadFile()/cat()/type()**  | read a file and create a stream                                                        |
 | **echo(text/lines/stream)** | echo text,lines from memory to a stream                                                 |
+| **Write(...)** | Alias for Console.Write() |
+| **WriteLine(...)** | Alias for Console.WriteLine() |
+| **print(...)** | alias for Console.WriteLine() |
+| **error(...)** | alias for Console.Out.WriteLine()  |
 | **Run(program, arg1, ..., argN)**    | run a program directly with the given args (aka Process.Start(program, args) |
 | **Start(program, arg1, ..., argN)**    | run a DETACHED program directly with the given args (aka Process.Start(program, args)|
 | **Cmd(cmd)**  | run the cmd inside a cmd.exe, allow you to execute shell commands (like dir /b *.*                  |
@@ -196,14 +201,17 @@ global using static CShellNet.Globals;
 using CShellNet;
 ```
 
+### 
+
 ### Short cut alias files 
 Visual Studio Code requires the script file to have .csx extension, but you can create an alias wrapper for the script file
 to make it that it can be invoked without the .csx extension.
 
 #### Creating an script alias on Windows 
-To create an alias for **example.csx** on Windows simply create a file **example.cmd**
+On windows if you add .csx to PATHEXT environment variable then you can invoke .csx files without the extension,
+so you can create a alias file **example.csx** and then invoke it just by typing **example** in the command line.
 ```cmd
-@dotnet script %~dp0\example.csx
+setx PATHEXT=%PATHEXT%;.csx
 ```
 
 #### Creating an script alias on Linux/MacOS
@@ -219,7 +227,9 @@ chmod +x example.csx
 ```
 
 ## CHANGELOG
-
+### v2.1.0
+* Added Write/WriteLine/print/error methods for writing to standard out and standard error
+ 
 ### V1.5.2
 * Added Exists() methods to global
 

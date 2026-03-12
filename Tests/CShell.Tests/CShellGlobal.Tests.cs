@@ -102,6 +102,39 @@ namespace CShellLibTests
             Assert.AreEqual("test1\r\ntest2\r\ntest3\r\n", x);
         }
 
+        [TestMethod]
+        public void Test_Global_Write_WriteLine_print_and_error()
+        {
+            var stdout = new StringWriter();
+            var stderr = new StringWriter();
+            var originalOut = Console.Out;
+            var originalError = Console.Error;
+
+            try
+            {
+                Console.SetOut(stdout);
+                Console.SetError(stderr);
+
+                Write("Hello world");
+                WriteLine(13);
+                print("printed");
+                error("failed");
+                Write("{0} {1}", "value", 42);
+                WriteLine();
+                WriteLine("{0}-{1}-{2}", 1, 2, 3);
+
+                Assert.AreEqual($"Hello world13{Environment.NewLine}printed{Environment.NewLine}value 42{Environment.NewLine}1-2-3{Environment.NewLine}", stdout.ToString());
+                Assert.AreEqual($"failed{Environment.NewLine}", stderr.ToString());
+            }
+            finally
+            {
+                Console.SetOut(originalOut);
+                Console.SetError(originalError);
+                stdout.Dispose();
+                stderr.Dispose();
+            }
+        }
+
 
         [TestMethod]
         public void Test_Global_Createrd()

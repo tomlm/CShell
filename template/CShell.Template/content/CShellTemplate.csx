@@ -1,5 +1,5 @@
 #!/usr/bin/env dotnet-script
-#r "nuget: CShell, 2.0.0"
+#r "nuget: CShell, 2.1.0"
 global using static CShellNet.Globals;
 using CShellNet;
 
@@ -18,6 +18,7 @@ using CShellNet;
 
 foreach (var arg in Args)
 {
-    Console.WriteLine($"{arg}");
+    WriteLine(arg);
+    print(arg);
 }
 

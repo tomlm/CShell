@@ -585,6 +585,379 @@ namespace CShellNet
             return echo(textReader.ReadToEnd());
         }
 
+        /// <summary>
+        /// Write value to standard out
+        /// </summary>
+        /// <param name="value"></param>
+        public void Write(string value) => Console.Write(value);
+
+        /// <summary>
+        /// Write value to standard out
+        /// </summary>
+        /// <param name="value"></param>
+        public void Write(bool value) => Console.Write(value);
+
+        /// <summary>
+        /// Write value to standard out
+        /// </summary>
+        /// <param name="value"></param>
+        public void Write(char value) => Console.Write(value);
+
+        /// <summary>
+        /// Write value to standard out
+        /// </summary>
+        /// <param name="value"></param>
+        public void Write(char[] buffer) => Console.Write(buffer);
+
+        /// <summary>
+        /// Write value to standard out
+        /// </summary>
+        /// <param name="value"></param>
+        public void Write(double value) => Console.Write(value);
+
+        /// <summary>
+        /// Write value to standard out
+        /// </summary>
+        /// <param name="value"></param>
+        public void Write(decimal value) => Console.Write(value);
+
+        /// <summary>
+        /// Write value to standard out
+        /// </summary>
+        /// <param name="value"></param>
+        public void Write(object value) => Console.Write(value);
+
+        /// <summary>
+        /// Write value to standard out
+        /// </summary>
+        /// <param name="value"></param>
+        public void Write(int value) => Console.Write(value);
+
+        /// <summary>
+        /// Write value to standard out
+        /// </summary>
+        /// <param name="value"></param>
+        public void Write(uint value) => Console.Write(value);
+
+        /// <summary>
+        /// Write value to standard out
+        /// </summary>
+        /// <param name="value"></param>
+        public void Write(long value) => Console.Write(value);
+
+        /// <summary>
+        /// Write value to standard out
+        /// </summary>
+        /// <param name="value"></param>
+        public void Write(ulong value) => Console.Write(value);
+
+        /// <summary>
+        /// Write value to standard out
+        /// </summary>
+        /// <param name="value"></param>
+        public void Write(float value) => Console.Write(value);
+
+        /// <summary>
+        /// Write value to standard out
+        /// </summary>
+        /// <param name="value"></param>
+        public void Write(string format, object arg0) => Console.Write(format, arg0);
+
+        /// <summary>
+        /// Write value to standard out
+        /// </summary>
+        /// <param name="value"></param>
+        public void Write(string format, params object[] arg) => Console.Write(format, arg);
+
+        /// <summary>
+        /// Write value to standard out
+        /// </summary>
+        /// <param name="value"></param>
+        public void Write(string format, object arg0, object arg1) => Console.Write(format, arg0, arg1);
+
+        /// <summary>
+        /// Write value to standard out
+        /// </summary>
+        /// <param name="value"></param>
+        public void Write(char[] buffer, int index, int count) => Console.Write(buffer, index, count);
+
+        /// <summary>
+        /// Write value to standard out
+        /// </summary>
+        /// <param name="value"></param>
+        public void Write(string format, object arg0, object arg1, object arg2) => Console.Write(format, arg0, arg1, arg2);
+
+        /// <summary>
+        /// Write value as line to standard out
+        /// </summary>
+        public void WriteLine() => Console.WriteLine();
+
+
+        /// <summary>
+        /// Write value as line to standard out
+        /// </summary>
+        public void WriteLine(int value) => Console.WriteLine(value);
+
+        /// <summary>
+        /// Write value as line to standard out
+        /// </summary>
+        public void WriteLine(bool value) => Console.WriteLine(value);
+
+        /// <summary>
+        /// Write value as line to standard out
+        /// </summary>
+        public void WriteLine(char value) => Console.WriteLine(value);
+
+        /// <summary>
+        /// Write value as line to standard out
+        /// </summary>
+        public void WriteLine(string value) => Console.WriteLine(value);
+
+        /// <summary>
+        /// Write value as line to standard out
+        /// </summary>
+        public void WriteLine(object value) => Console.WriteLine(value);
+
+        /// <summary>
+        /// Write value as line to standard out
+        /// </summary>
+        public void WriteLine(ulong value) => Console.WriteLine(value);
+
+        /// <summary>
+        /// Write value as line to standard out
+        /// </summary>
+        public void WriteLine(long value) => Console.WriteLine(value);
+
+        /// <summary>
+        /// Write value as line to standard out
+        /// </summary>
+        public void WriteLine(uint value) => Console.WriteLine(value);
+
+        /// <summary>
+        /// Write value as line to standard out
+        /// </summary>
+        public void WriteLine(char[] buffer) => Console.WriteLine(buffer);
+
+        /// <summary>
+        /// Write value as line to standard out
+        /// </summary>
+        public void WriteLine(float value) => Console.WriteLine(value);
+
+        /// <summary>
+        /// Write value as line to standard out
+        /// </summary>
+        public void WriteLine(double value) => Console.WriteLine(value);
+
+        /// <summary>
+        /// Write value as line to standard out
+        /// </summary>
+        public void WriteLine(decimal value) => Console.WriteLine(value);
+
+        /// <summary>
+        /// Write value as line to standard out
+        /// </summary>
+        public void WriteLine(string format, params object[] arg) => Console.WriteLine(format, arg);
+
+        /// <summary>
+        /// Write value as line to standard out
+        /// </summary>
+        public void WriteLine(string format, object arg0) => Console.WriteLine(format, arg0);
+
+        /// <summary>
+        /// Write value as line to standard out
+        /// </summary>
+        public void WriteLine(string format, object arg0, object arg1) => Console.WriteLine(format, arg0, arg1);
+
+        /// <summary>
+        /// Write value as line to standard out
+        /// </summary>
+        public void WriteLine(char[] buffer, int index, int count) => Console.WriteLine(buffer, index, count);
+
+        /// <summary>
+        /// Write value as line to standard out
+        /// </summary>
+        public void WriteLine(string format, object arg0, object arg1, object arg2) => Console.WriteLine(format, arg0, arg1, arg2);
+
+        /// <summary>
+        /// Write line to standard out
+        /// </summary>
+        public void print() => Console.Out.WriteLine();
+
+        /// <summary>
+        /// Write value as line to standard out
+        /// </summary>
+        public void print(int value) => Console.Out.WriteLine(value);
+
+        /// <summary>
+        /// Write value as line to standard out
+        /// </summary>
+        public void print(bool value) => Console.Out.WriteLine(value);
+
+        /// <summary>
+        /// Write value as line to standard out
+        /// </summary>
+        public void print(char value) => Console.Out.WriteLine(value);
+
+        /// <summary>
+        /// Write value as line to standard out
+        /// </summary>
+        public void print(string value) => Console.Out.WriteLine(value);
+
+        /// <summary>
+        /// Write value as line to standard out
+        /// </summary>
+        public void print(object value) => Console.Out.WriteLine(value);
+
+        /// <summary>
+        /// Write value as line to standard out
+        /// </summary>
+        public void print(ulong value) => Console.Out.WriteLine(value);
+
+        /// <summary>
+        /// Write value as line to standard out
+        /// </summary>
+        public void print(long value) => Console.Out.WriteLine(value);
+
+        /// <summary>
+        /// Write value as line to standard out
+        /// </summary>
+        public void print(uint value) => Console.Out.WriteLine(value);
+
+        /// <summary>
+        /// Write value as line to standard out
+        /// </summary>
+        public void print(char[] buffer) => Console.Out.WriteLine(buffer);
+
+        /// <summary>
+        /// Write value as line to standard out
+        /// </summary>
+        public void print(float value) => Console.Out.WriteLine(value);
+
+        /// <summary>
+        /// Write value as line to standard out
+        /// </summary>
+        public void print(double value) => Console.Out.WriteLine(value);
+
+        /// <summary>
+        /// Write value as line to standard out
+        /// </summary>
+        public void print(decimal value) => Console.Out.WriteLine(value);
+
+        /// <summary>
+        /// Write value as line to standard out
+        /// </summary>
+        public void print(string format, params object[] arg) => Console.Out.WriteLine(format, arg);
+
+        /// <summary>
+        /// Write value as line to standard out
+        /// </summary>
+        public void print(string format, object arg0) => Console.Out.WriteLine(format, arg0);
+
+        /// <summary>
+        /// Write value as line to standard out
+        /// </summary>
+        public void print(string format, object arg0, object arg1) => Console.Out.WriteLine(format, arg0, arg1);
+
+        /// <summary>
+        /// Write value as line to standard out
+        /// </summary>
+        public void print(char[] buffer, int index, int count) => Console.Out.WriteLine(buffer, index, count);
+
+        /// <summary>
+        /// Write value as line to standard out
+        /// </summary>
+        public void print(string format, object arg0, object arg1, object arg2) => Console.Out.WriteLine(format, arg0, arg1, arg2);
+
+
+        /// <summary>
+        /// Write value as line to standard Error
+        /// </summary>
+        public void error() => Console.Error.WriteLine();
+
+        /// <summary>
+        /// Write value as line to standard Error
+        /// </summary>
+        public void error(int value) => Console.Error.WriteLine(value);
+
+        /// <summary>
+        /// Write value as line to standard Error
+        /// </summary>
+        public void error(bool value) => Console.Error.WriteLine(value);
+
+        /// <summary>
+        /// Write value as line to standard Error
+        /// </summary>
+        public void error(char value) => Console.Error.WriteLine(value);
+
+        /// <summary>
+        /// Write value as line to standard Error
+        /// </summary>
+        public void error(string value) => Console.Error.WriteLine(value);
+
+        /// <summary>
+        /// Write value as line to standard Error
+        /// </summary>
+        public void error(object value) => Console.Error.WriteLine(value);
+
+        /// <summary>
+        /// Write value as line to standard Error
+        /// </summary>
+        public void error(ulong value) => Console.Error.WriteLine(value);
+
+        /// <summary>
+        /// Write value as line to standard Error
+        /// </summary>
+        public void error(long value) => Console.Error.WriteLine(value);
+
+        /// <summary>
+        /// Write value as line to standard Error
+        /// </summary>
+        public void error(uint value) => Console.Error.WriteLine(value);
+
+        /// <summary>
+        /// Write value as line to standard Error
+        /// </summary>
+        public void error(char[] buffer) => Console.Error.WriteLine(buffer);
+
+        /// <summary>
+        /// Write value as line to standard Error
+        /// </summary>
+        public void error(float value) => Console.Error.WriteLine(value);
+
+        /// <summary>
+        /// Write value as line to standard Error
+        /// </summary>
+        public void error(double value) => Console.Error.WriteLine(value);
+
+        /// <summary>
+        /// Write value as line to standard Error
+        /// </summary>
+        public void error(decimal value) => Console.Error.WriteLine(value);
+
+        /// <summary>
+        /// Write value as line to standard Error
+        /// </summary>
+        public void error(string format, params object[] arg) => Console.Error.WriteLine(format, arg);
+
+        /// <summary>
+        /// Write value as line to standard Error
+        /// </summary>
+        public void error(string format, object arg0) => Console.Error.WriteLine(format, arg0);
+
+        /// <summary>
+        /// Write value as line to standard Error
+        /// </summary>
+        public void error(string format, object arg0, object arg1) => Console.Error.WriteLine(format, arg0, arg1);
+
+        /// <summary>
+        /// Write value as line to standard Error
+        /// </summary>
+        public void error(char[] buffer, int index, int count) => Console.Error.WriteLine(buffer, index, count);
+
+        /// <summary>
+        /// Write value as line to standard Error
+        /// </summary>
+        public void error(string format, object arg0, object arg1, object arg2) => Console.Error.WriteLine(format, arg0, arg1, arg2);
 
         /// <summary>
         /// Resolve a path relative to CurrentFolder
