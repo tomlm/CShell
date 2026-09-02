@@ -19,6 +19,19 @@ namespace CShellNet
         public static bool Echo { get => _shell.Echo; set => _shell.Echo = value; }
 
         /// <summary>
+        /// Where the Ask methods get their keystrokes when reading keys rather than lines.
+        /// Null reads the console. See CShell.ReadKey.
+        /// </summary>
+        public static Func<ConsoleKeyInfo> ReadKey { get => _shell.ReadKey; set => _shell.ReadKey = value; }
+
+        /// <summary>
+        /// Whether the Ask methods draw their rich prompts or fall back to reading a typed line.
+        /// Null, the default, decides by asking whether standard input is redirected, because
+        /// Console.ReadKey() throws when it is. See CShell.RichPrompts.
+        /// </summary>
+        public static bool? RichPrompts { get => _shell.RichPrompts; set => _shell.RichPrompts = value; }
+
+        /// <summary>
         /// Reset global shell state.
         /// </summary>
         /// <param name="startFolder"></param>
@@ -30,6 +43,29 @@ namespace CShellNet
         /// <summary>
         /// Run a process
         /// </summary>
+        /// <remarks>
+        /// All three streams are redirected, which is what makes StandardOutput readable, and
+        /// also what makes this the wrong method for a process that stops to ask the user
+        /// something -- `claude setup-token`, `gh auth login`, ssh, anything with a terminal UI.
+        /// Such a process ends up waiting on a stdin pipe that nothing will ever write to and
+        /// nothing will ever close. It never exits, nothing is printed while it waits, and there
+        /// is no way to answer the question it is stuck on.
+        ///
+        /// To run one of those, leave stdin and stderr on the console this shell is itself
+        /// attached to and capture stdout alone. That is the `program | cat` shape: the question
+        /// reaches the user and the answer reaches the process.
+        ///
+        ///     var result = await Run(opt => opt.StartInfo(psi =>
+        ///     {
+        ///         psi.RedirectStandardInput = false;
+        ///         psi.RedirectStandardError = false;
+        ///     }), "claude", "setup-token").AsResult();
+        ///
+        /// Captured still means unseen: a terminal UI draws itself on stdout, so it shows nothing
+        /// at all while it waits, which looks exactly like the hang above. Print what to expect
+        /// before calling it. Nothing is feeding stdin either, so RedirectFrom() and piping in do
+        /// not apply to a call shaped like this.
+        /// </remarks>
         /// <param name="executable"></param>
         /// <param name="arguments"></param>
         /// <returns></returns>
@@ -63,6 +99,137 @@ namespace CShellNet
         /// <returns></returns>
         public static Command Start(Action<Shell.Options> options, string executable, params Object[] arguments)
             => _shell.Start(options, executable, arguments);
+
+        /// <summary>
+        /// Ask the user a question and return what they typed.
+        /// </summary>
+        /// <remarks>
+        /// The Ask family is the script asking the user. For the other direction -- a process
+        /// that asks the user something itself -- see the remarks on Run(). All of them throw if
+        /// standard input is at end of stream, rather than answering for someone who is not
+        /// there. See CShell.AskText().
+        /// </remarks>
+        /// <param name="question">the question, asked as written</param>
+        /// <returns>what the user typed, trimmed; empty if they just pressed enter</returns>
+        public static string AskText(string question)
+            => _shell.AskText(question);
+
+        /// <summary>
+        /// Ask the user for something that should not be looked at, and read it without echoing.
+        /// </summary>
+        /// <remarks>
+        /// For tokens, passwords and keys -- AskText() would leave the answer on the screen and
+        /// in the scrollback. Falls back to reading a line when standard input is redirected,
+        /// where there is no terminal echoing it anyway. See CShell.AskSecret().
+        /// </remarks>
+        /// <param name="question">the question, asked as written</param>
+        /// <returns>what the user typed, trimmed</returns>
+        public static string AskSecret(string question)
+            => _shell.AskSecret(question);
+
+        /// <summary>
+        /// Ask the user to pick one of a list, and return the one they picked.
+        /// </summary>
+        /// <remarks>
+        /// Labelled ChoiceStyle.Auto: nothing in front of the options when there are arrow keys
+        /// to pick with, numbers when the answer has to be typed. See CShell.AskChoice().
+        /// </remarks>
+        /// <typeparam name="T">what is being chosen among</typeparam>
+        /// <param name="question">the question, asked as written</param>
+        /// <param name="options">the things to choose between, at least one</param>
+        /// <param name="label">what to show for each; ToString() when not given</param>
+        /// <returns>the option chosen</returns>
+        public static T AskChoice<T>(string question, IEnumerable<T> options, Func<T, string> label = null)
+            => _shell.AskChoice(question, options, label);
+
+        /// <summary>
+        /// Ask the user to pick one of a list, and return the one they picked.
+        /// </summary>
+        /// <remarks>
+        /// With keys to read the list is moved with the arrow keys, the current option shown in
+        /// brackets. Without them the answer is typed: the option's label, its number, or its
+        /// letter under ChoiceStyle.Letters -- label matched first. See CShell.AskChoice().
+        /// </remarks>
+        /// <typeparam name="T">what is being chosen among</typeparam>
+        /// <param name="question">the question, asked as written</param>
+        /// <param name="style">how the options are labelled</param>
+        /// <param name="options">the things to choose between, at least one</param>
+        /// <param name="label">what to show for each; ToString() when not given</param>
+        /// <returns>the option chosen</returns>
+        public static T AskChoice<T>(string question, ChoiceStyle style, IEnumerable<T> options, Func<T, string> label = null)
+            => _shell.AskChoice(question, style, options, label);
+
+        /// <summary>
+        /// Ask the user to pick any number of a list, and return the ones they picked.
+        /// </summary>
+        /// <remarks>
+        /// Labelled ChoiceStyle.Auto: nothing in front of the options when there are arrow keys
+        /// to pick with, numbers when the answer has to be typed. See CShell.AskMultiChoice().
+        /// </remarks>
+        /// <typeparam name="T">what is being chosen among</typeparam>
+        /// <param name="question">the question, asked as written</param>
+        /// <param name="options">the things to choose among, at least one</param>
+        /// <param name="label">what to show for each; ToString() when not given</param>
+        /// <returns>the options chosen, in list order; empty if none were</returns>
+        public static T[] AskMultiChoice<T>(string question, IEnumerable<T> options, Func<T, string> label = null)
+            => _shell.AskMultiChoice(question, options, label);
+
+        /// <summary>
+        /// Ask the user to pick any number of a list, and return the ones they picked.
+        /// </summary>
+        /// <remarks>
+        /// With keys to read, up and down move a `>` down the list and space checks the option
+        /// under it. Without them the answer is a comma separated list of labels, numbers or
+        /// letters. Choosing nothing is an answer and returns an empty array.
+        /// See CShell.AskMultiChoice().
+        /// </remarks>
+        /// <typeparam name="T">what is being chosen among</typeparam>
+        /// <param name="question">the question, asked as written</param>
+        /// <param name="style">how the options are labelled</param>
+        /// <param name="options">the things to choose among, at least one</param>
+        /// <param name="label">what to show for each; ToString() when not given</param>
+        /// <returns>the options chosen, in list order; empty if none were</returns>
+        public static T[] AskMultiChoice<T>(string question, ChoiceStyle style, IEnumerable<T> options, Func<T, string> label = null)
+            => _shell.AskMultiChoice(question, style, options, label);
+
+        /// <summary>
+        /// Ask the user for a whole number, asking again until they give one.
+        /// </summary>
+        /// <param name="question">the question, asked as written</param>
+        /// <returns>the number they typed</returns>
+        public static int AskNumber(string question)
+            => _shell.AskNumber(question);
+
+        /// <summary>
+        /// Ask the user for a whole number within a range, asking again until they give one.
+        /// </summary>
+        /// <param name="question">the question, asked as written</param>
+        /// <param name="min">smallest acceptable answer, inclusive</param>
+        /// <param name="max">largest acceptable answer, inclusive</param>
+        /// <returns>the number they typed, between min and max</returns>
+        public static int AskNumber(string question, int min, int max)
+            => _shell.AskNumber(question, min, max);
+
+        /// <summary>
+        /// Ask the user a yes or no question, asking again until they answer one or the other.
+        /// </summary>
+        /// <param name="question">the question, asked as written</param>
+        /// <returns>true for yes, false for no</returns>
+        public static bool AskYesNo(string question)
+            => _shell.AskYesNo(question);
+
+        /// <summary>
+        /// Ask the user a yes or no question, with an answer that pressing enter accepts.
+        /// </summary>
+        /// <remarks>
+        /// Shown `[Y/n]` or `[y/N]`, so the capital is a promise -- pass the SAFE answer as the
+        /// default, because enter is what gets pressed by someone who is not reading.
+        /// </remarks>
+        /// <param name="question">the question, asked as written</param>
+        /// <param name="defaultAnswer">what pressing enter answers</param>
+        /// <returns>true for yes, false for no</returns>
+        public static bool AskYesNo(string question, bool defaultAnswer)
+            => _shell.AskYesNo(question, defaultAnswer);
 
         /// <summary>
         /// Run a cmd/bash command
