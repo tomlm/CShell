@@ -224,7 +224,7 @@ CShell adds on helper methods to make it even easier to work with the result of 
 |------------------|------------------------------------------------------------------------------|
 | **Execute(log)**    | get the CommandResult (with stdout/stderr) of the last command               |
 | **AsString(log)**   | get the standard out of the last command a string                            |
-| **AsJson(log)**     | Parse the standard out of the last command as JSON, navigated by indexer: `json["owner"]["login"]` |
+| **AsJson(log)**     | Parse the standard out of the last command as JSON: `json.owner.login`, `json["owner"]`, or assign it to a JsonObject |
 | **AsJson\<T>(log)** | JSON Deserialize the standard out of the last command into a typed T         |
 | **AsXml\<T>(log)**  | XML Deserialize the standard out of the last command intoa typed T           |
 | **AsFile()**     | Write the stdout/stderr  of the last command to a file                       |
@@ -234,6 +234,21 @@ To call a program you await on:
 1. call ReadFile()/Run()/Cmd()/Bash()/echo()
 2. call any chaining commands 
 3. end with a result call like Execute()/AsJson()/AsString()/AsXml()etc.
+
+`AsJson()` gives you a **JsonDynamic**, which reads whichever way suits the script:
+
+```CSharp
+var json = await Cmd("gh api repos/tomlm/CShell").AsJson();
+
+Console.WriteLine(json.owner.login);       // walk it with a dot
+Console.WriteLine(json["stargazers_count"]);
+foreach (var topic in json.topics) { }     // arrays enumerate
+
+JsonObject o = await Cmd("gh api repos/tomlm/CShell").AsJson();   // or take the typed API
+```
+
+A property that is not there reads as null, so `if (json.optional != null)` is how you test for
+one. Use `AsJson<T>()` where the shape is known.
 
 The result methods all take a log argument is passed set to true then the commands output will be written to standard out.
 
@@ -357,7 +372,7 @@ chmod +x example.csx
 * Added **RichPrompts** and **ReadKey** to control how the Ask methods read input
 * **BREAKING** now targets net8.0 rather than netstandard2.0. .NET Framework is no longer supported
 * **BREAKING** replaced Newtonsoft.Json with System.Text.Json; MedallionShell is now the only dependency
-  * `AsJson()` returns a `JsonNode`, not a dynamic `JObject` -- use `json["owner"]["login"]`. `AsJson<T>()` is unchanged
+  * `AsJson()` returns a **JsonDynamic** as `dynamic`, so `json.owner.login` still works. It also indexes, enumerates, and converts to JsonNode/JsonObject/JsonArray. `AsJson<T>()` is unchanged
   * property names still match case insensitively; trailing commas, comments and a byte order mark are tolerated
 
 ### v2.1.0

@@ -38,14 +38,14 @@ namespace CShellNet
         /// Parse the StandardOutput of a command as JSON.
         /// </summary>
         /// <remarks>
-        /// Navigate it by indexer: `json["owner"]["login"]`. Member access -- `json.owner.login`
-        /// -- worked against the Newtonsoft JObject this used to return and does not against a
-        /// JsonNode; use AsJson&lt;T&gt;() where a shape is known.
+        /// Walk it with a dot -- `json.owner.login` -- or with an indexer, or assign it to a
+        /// JsonNode, JsonObject or JsonArray for the typed System.Text.Json API. The object behind
+        /// it is a JsonDynamic either way. Use AsJson&lt;T&gt;() where the shape is known.
         /// </remarks>
         /// <param name="cmd"></param>
         /// <param name="log">if true the output to standardout/error</param>
-        /// <returns>the parsed JSON</returns>
-        public async static Task<JsonNode> AsJson(this Command cmd, bool log = false)
+        /// <returns>the parsed JSON, as a JsonDynamic</returns>
+        public async static Task<dynamic> AsJson(this Command cmd, bool log = false)
         {
             var cmdResult = await cmd.Task.ConfigureAwait(false);
             if (log)
@@ -58,7 +58,7 @@ namespace CShellNet
                 throw new CommandResultException(cmdResult);
             }
 
-            return JsonNode.Parse(Json.Clean(cmdResult.StandardOutput), null, Json.DocumentOptions);
+            return new JsonDynamic(JsonNode.Parse(Json.Clean(cmdResult.StandardOutput), null, Json.DocumentOptions));
         }
 
         /// <summary>
