@@ -15,6 +15,10 @@ CShell provides:
 By maintaining the concept of a current folder  all file and folder commands can be take absolute or 
  relative paths just like a normal shell.
 
+CShell targets **net8.0** and depends only on
+[MedallionShell](https://github.com/madelson/MedallionShell). JSON is read with the in-box
+System.Text.Json.
+
 ### Properties
 CShell exposes 3 properties which are the working environment of your script.  The CurrentFolder is used to resolve relative paths for
 most methods, so if you call **MoveFile(@"..\foo.txt", @"..\..\bar")** it will resolve the paths and execute just like a normal shell.
@@ -72,8 +76,7 @@ error("ohoh!");
 ```
 
 ### Asking the user
-The **Ask** methods are the questions a *script* asks the *user*. (For the other direction, a
-process that asks the user something itself, see the remarks on **Run()**.)
+The **Ask** methods ask the user a question and return the answer.
 
 | Method           | Description                                                                                      |
 |------------------|--------------------------------------------------------------------------------------------------|
@@ -95,48 +98,34 @@ var retries = AskNumber("How many retries?", 1, 5);
 var push    = AskYesNo("Push straight to main?", false);
 
 string[] fruits = ["apple", "banana", "cherry"];
-var fruit = AskChoice("Pick a fruit:", fruits);       // returns "banana", not 2
-
+var fruit = AskChoice("Pick a fruit:", fruits);              // returns "banana", not 2
 var repo  = AskChoice("Pick a repo:", repos, r => r.Name);   // returns the Repo itself
 var extra = AskMultiChoice("Choose your toppings:", toppings);
 ```
 
-**AskChoice** and **AskMultiChoice** are generic. They return the option itself rather than its
-position, and an optional selector says what to show for each, so you can hand them your own
-objects and get one back with no lookup. Without a selector they use `ToString()`.
+* **AskChoice** and **AskMultiChoice** are generic and return the option itself, not its position.
+  The optional selector says what to show for each; without one they use `ToString()`.
+* With a console they draw arrow-key prompts; with input redirected they read a typed line.
+  `RichPrompts` forces either mode, `ReadKey` supplies the keystrokes.
+* An option's own text is matched before its position, so a list of `"3", "1", "2"` answers the
+  way it reads.
+* At end of stream they throw, naming the question, rather than returning an empty answer.
 
-Every Ask method has **two modes and picks between them itself**. With a console it draws a rich
-prompt -- a selection you move with the arrow keys, redrawn as it changes. With standard input
-redirected it reads a typed line instead. That is not cosmetic: `Console.ReadKey()` throws when
-input is redirected, so a script that is piped, scheduled or running under CI has no keys to read
-and needs a typed twin rather than a degraded version of the same thing. `RichPrompts` overrides
-the choice and `ReadKey` supplies the keystrokes.
-
-`ChoiceStyle` decides how the options are labelled, and under `Letters` it also decides what may
-be typed:
+`ChoiceStyle` sets the labels, and under `Letters` also what may be typed:
 
 | Style      | Renders            | A typed answer may be              |
 |------------|--------------------|------------------------------------|
-| **Auto**   | nothing when there are arrow keys, numbers when the answer must be typed | the option's text, or its number |
+| **Auto**   | nothing with arrow keys, numbers when typed | the option's text, or its number |
 | **Numbers**| `1) 2) 3)`         | the option's text, or its number   |
-| **Letters**| `a) b) c)`         | the option's text, or its letter -- a bare `2` names nothing |
+| **Letters**| `a) b) c)`         | the option's text, or its letter   |
 | **None**   | nothing            | the option's text only             |
 
-The option's own text is matched **before** its position, so a list whose options are themselves
-numbers -- `"3", "1", "2"` -- answers the way it reads: typing `3` picks the option labelled 3
-rather than the third one.
-
-Every Ask method throws rather than answering for someone who is not there: at end of stream it
-says which question went unanswered, instead of taking an empty answer or spinning forever on a
-console nobody is attached to.
-
-See **askdemo.csx** in this repo for a guided tour that shows each call and then runs it.
+See **askdemo.csx** for a guided tour that shows each call and then runs it.
 
 ### Command line
-**Cli** declares what a script accepts and reads the command line against it. Three words, because
-there are three kinds of thing: an **Argument** is a positional, a **Switch** is on or off, and an
-**Option** carries a value. The same three words read the values back, so the block that reads a
-command line can be checked line for line against the block that declared it.
+**Cli** declares what a script accepts and reads the command line against it. An **Argument** is a
+positional, a **Switch** is on or off, an **Option** carries a value. The same three words read
+the values back.
 
 ```CSharp
 var cmd = Cli.For(Args)
@@ -164,12 +153,10 @@ var whatIf = cmd.WhatIf;
 | **Program(name)** | override the name in the usage line |
 | **UsageWhenEmpty()** | print the usage when run with no arguments at all |
 | **Parse()** | read the command line; prints and exits if it was not valid or help was asked for |
-| **TryParse()** | the same, reported rather than acted on -- for tests, and for handling it yourself |
+| **TryParse()** | the same, reported through ShouldExit rather than acted on |
 
 | Read on CliResult | Description                                                                                     |
 |------------------|--------------------------------------------------------------------------------------------------|
-| **ShouldExit**   | *(TryParse only)* true when the script should stop -- help was shown, or the line was not valid |
-| **ExitCode**     | *(TryParse only)* 0 for help, 1 for a command line that was not valid |
 | **Argument(name)** | what was given for a positional, or null when an optional one was omitted |
 | **Switch(name)** | whether a switch was given |
 | **Option(name)** | the value given for an option, or null |
@@ -179,45 +166,20 @@ var whatIf = cmd.WhatIf;
 | **Error**        | what was wrong with the command line, or null |
 | **UsageText**    | the generated help, whether or not it was shown |
 | **ProgramName**  | the name shown in the usage line |
+| **ShouldExit**   | *(TryParse only)* true when the script should stop |
+| **ExitCode**     | *(TryParse only)* 0 for help, 1 for a command line that was not valid |
 
-**Anything undeclared is an error.** Silently ignoring an unknown switch is how a mistyped
-`--dry-run` does the real thing and a mistyped `--api-key` runs with the wrong one. Bare words are
-positionals rather than unknown switches, which is what lets a script take a path without every
-path being rejected as a switch it does not know.
-
-**Values attach.** `-out:file` and `-out=file`, never `-out file`. That is a safety property
-rather than a shortcut: the separated form is what lets a trailing `-out` silently become a
-positional, and `-out --whatif` silently swallow the next switch as its value. An attached value
-is one token, so neither is possible, and someone typing the separated form is told so. Only the
-name is normalized -- the value is kept exactly as typed, so
-`-source:https://api.nuget.org/v3/index.json` and `-out:C:\temp\My-Folder` arrive intact.
-
-**Switches are spelled with dashes.** `-whatif`, `--whatif` and `--what-if` are one switch: the
-leading dashes come off, inner hyphens and underscores go, and case is ignored. `/` is not a
-prefix -- it would make every absolute path on Linux look like a switch.
-
-**Help is generated from the declarations**, so it cannot drift from what the script accepts.
-`-help`, `-h` and `-?` work without being asked for, and the program name comes from the calling
-script's file name.
-
-**Parse() stops the script itself** when the command line was not valid or help was asked for, so
-there is nothing to check: what it returns is always usable, and a line that was not understood
-never reaches the script body. The message has already gone to standard error, or the help to
-standard output, and the process has exited 1 or 0. It never throws for a bad command line -- a
-stack trace is the wrong way to say "you typed --dryrun" -- though it still throws for a mistake
-in the script itself, at the declaration that caused it.
-
-Use **TryParse()** where exiting is not acceptable: a test, or a command line parsed inside a
-larger program that means to handle the failure itself. It reports through `ShouldExit` and
-`ExitCode` instead, and forgetting to check them is caught rather than ignored -- every value on
-the result throws until you do, so a missed check fails loudly instead of running on with defaults
-it never earned.
-
-The ceiling, stated so nobody has to discover it: no subcommands, no repeated options, no typed
-binding, and no separated values. A script that needs more than this can reference
-[System.CommandLine](https://www.nuget.org/packages/System.CommandLine) directly -- it targets
-netstandard2.0, so a `.csx` can `#r` it without CShell being involved.
-
+* Anything undeclared is an error. Bare words are positionals, not unknown switches.
+* Values attach: `-out:file` or `-out=file`, never `-out file`. Only the name is normalized, so
+  `-source:https://api.nuget.org/v3/index.json` arrives intact.
+* `-whatif`, `--whatif` and `--what-if` are one switch -- dashes come off, inner hyphens and
+  underscores go, case is ignored. `/` is not a prefix.
+* `-help`, `-h` and `-?` work without being declared, and the help is generated from the
+  declarations. The program name comes from the calling script's file name.
+* `Parse()` exits on a bad command line, so what it returns is always usable. `TryParse()` reports
+  through `ShouldExit`/`ExitCode` instead, and every other value on it throws until you check.
+* No subcommands, repeated options, typed binding, or separated values. For more,
+  reference [System.CommandLine](https://www.nuget.org/packages/System.CommandLine) directly.
 
 ### Process Methods
 CShell is built using [MedallionShell](https://github.com/madelson/MedallionShell), which provides a great set of functionality for easily invoking 
@@ -262,7 +224,7 @@ CShell adds on helper methods to make it even easier to work with the result of 
 |------------------|------------------------------------------------------------------------------|
 | **Execute(log)**    | get the CommandResult (with stdout/stderr) of the last command               |
 | **AsString(log)**   | get the standard out of the last command a string                            |
-| **AsJson(log)**     | JSON Deserialize the standard out of the last command into a JObject/dynamic |
+| **AsJson(log)**     | Parse the standard out of the last command as JSON, navigated by indexer: `json["owner"]["login"]` |
 | **AsJson\<T>(log)** | JSON Deserialize the standard out of the last command into a typed T         |
 | **AsXml\<T>(log)**  | XML Deserialize the standard out of the last command intoa typed T           |
 | **AsFile()**     | Write the stdout/stderr  of the last command to a file                       |
@@ -388,12 +350,15 @@ chmod +x example.csx
 ### v3.0.0
 * Added **Cli**, a declarative command line parser with generated --help
   * Argument()/OptionalArgument()/Rest() for positionals, Switch() for booleans, Option() for attached values
-  * anything undeclared is an error; Parse() reports it and exits, TryParse() hands it back instead
+  * anything undeclared is an error; Parse() exits on a bad command line, TryParse() reports instead
 * Added the **Ask** methods: AskText, AskSecret, AskYesNo, AskNumber, AskChoice, AskMultiChoice
   * AskChoice/AskMultiChoice are generic and return the option itself rather than its position
-  * each has a rich arrow-key mode and a typed-line mode, chosen from whether input is redirected
+  * each has an arrow-key mode and a typed-line mode, chosen from whether input is redirected
 * Added **RichPrompts** and **ReadKey** to control how the Ask methods read input
-* Nothing was removed or renamed -- 3.0.0 marks the size of the release, not a break
+* **BREAKING** now targets net8.0 rather than netstandard2.0. .NET Framework is no longer supported
+* **BREAKING** replaced Newtonsoft.Json with System.Text.Json; MedallionShell is now the only dependency
+  * `AsJson()` returns a `JsonNode`, not a dynamic `JObject` -- use `json["owner"]["login"]`. `AsJson<T>()` is unchanged
+  * property names still match case insensitively; trailing commas, comments and a byte order mark are tolerated
 
 ### v2.1.0
 * Added Write/WriteLine/print/error methods for writing to standard out and standard error

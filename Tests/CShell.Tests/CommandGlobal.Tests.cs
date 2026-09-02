@@ -1,8 +1,8 @@
-global using static CShellNet.Globals;
+﻿global using static CShellNet.Globals;
 global using CShellNet;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using System;
 using System.IO;
 using System.Reflection;
@@ -48,13 +48,13 @@ namespace CShellLibTests
             Assert.AreEqual("Joe Smith", record.Name, "name is wrong");
             Assert.AreEqual(42, record.Age, "age is wrong");
 
-            JObject record2 = (JObject)await ReadFile("TestA.txt").AsJson();
-            Assert.AreEqual("Joe Smith", (string)record2["name"], "JOBject name is wrong");
-            Assert.AreEqual(42, (int)record2["age"], "JOBject age is wrong");
+            JsonNode record2 = await ReadFile("TestA.txt").AsJson();
+            Assert.AreEqual("Joe Smith", (string)record2["name"], "JsonNode name is wrong");
+            Assert.AreEqual(42, (int)record2["age"], "JsonNode age is wrong");
 
-            dynamic record3 = await ReadFile("TestA.txt").AsJson();
-            Assert.AreEqual("Joe Smith", (string)record3.name, "dynamic name is wrong");
-            Assert.AreEqual(42, (int)record3.age, "dynamic age is wrong");
+            // Nested indexing is how a JsonNode is navigated. Member access -- record.name --
+            // came from the Newtonsoft JObject and is gone with it.
+            Assert.IsNull(record2["nope"], "a missing property reads as null");
         }
 
 

@@ -1,5 +1,6 @@
 ﻿using Medallion.Shell;
-using Newtonsoft.Json;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using System;
 using System.Diagnostics;
 using System.IO;
@@ -34,12 +35,17 @@ namespace CShellNet
         }
 
         /// <summary>
-        /// Convert StandardOutput of command to dynamic object using Json deserialization (JObject)
+        /// Parse the StandardOutput of a command as JSON.
         /// </summary>
+        /// <remarks>
+        /// Navigate it by indexer: `json["owner"]["login"]`. Member access -- `json.owner.login`
+        /// -- worked against the Newtonsoft JObject this used to return and does not against a
+        /// JsonNode; use AsJson&lt;T&gt;() where a shape is known.
+        /// </remarks>
         /// <param name="cmd"></param>
         /// <param name="log">if true the output to standardout/error</param>
-        /// <returns>JObject</returns>
-        public async static Task<dynamic> AsJson(this Command cmd, bool log = false)
+        /// <returns>the parsed JSON</returns>
+        public async static Task<JsonNode> AsJson(this Command cmd, bool log = false)
         {
             var cmdResult = await cmd.Task.ConfigureAwait(false);
             if (log)
@@ -52,7 +58,7 @@ namespace CShellNet
                 throw new CommandResultException(cmdResult);
             }
 
-            return JsonConvert.DeserializeObject(cmdResult.StandardOutput);
+            return JsonNode.Parse(Json.Clean(cmdResult.StandardOutput), null, Json.DocumentOptions);
         }
 
         /// <summary>
@@ -75,7 +81,7 @@ namespace CShellNet
                 throw new CommandResultException(cmdResult);
             }
 
-            return JsonConvert.DeserializeObject<T>(cmdResult.StandardOutput);
+            return JsonSerializer.Deserialize<T>(Json.Clean(cmdResult.StandardOutput), Json.Options);
         }
 
         /// <summary>
