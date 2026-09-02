@@ -6,6 +6,7 @@ using System.Text.Json.Nodes;
 using System;
 using System.IO;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 
 namespace CShellLibTests
@@ -20,7 +21,7 @@ namespace CShellLibTests
         [ClassInitialize()]
         public static void ClassInit(TestContext context)
         {
-            testFolder = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), @"..\..\..\test"));
+            testFolder = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "..", "..", "..", "test"));
             subFolder = Path.Combine(testFolder, "subfolder");
             subFolder2 = Path.Combine(subFolder, "subfolder2");
         }
@@ -158,12 +159,17 @@ namespace CShellLibTests
             }
         }
 
+
+        /// <summary>List one file, in whichever shell Cmd() runs: cmd.exe on Windows, bash elsewhere.</summary>
+        private static string ListTestA =>
+            RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "dir /b TestA.txt" : "ls TestA.txt";
+
         [TestMethod]
         public async Task Test_Global_Cmd()
         {
 
             ResetShell(testFolder);
-            var result = await Cmd("dir /b TestA.txt").AsString();
+            var result = await Cmd(ListTestA).AsString();
             Assert.AreEqual("TestA.txt", result.Trim(), "AsString");
         }
 
@@ -195,7 +201,7 @@ namespace CShellLibTests
             Assert.IsTrue(result.Success);
             try
             {
-                result = await Start("xxxxxtest.cmd").Execute();
+                result = await Start("xxxxx-no-such-program").Execute();
                 Assert.Fail("Should have thrown execption)");
             }
             catch 
@@ -223,7 +229,7 @@ namespace CShellLibTests
         {
 
             ResetShell(testFolder);
-            var commandResult = await Cmd("dir /b TestA.txt").Execute(true);
+            var commandResult = await Cmd(ListTestA).Execute(true);
         }
 
     }

@@ -1,4 +1,4 @@
-global using static CShellNet.Globals;
+﻿global using static CShellNet.Globals;
 global using CShellNet;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
@@ -19,7 +19,7 @@ namespace CShellLibTests
         [ClassInitialize()]
         public static void ClassInit(TestContext context)
         {
-            testFolder = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), @"..\..\..\test"));
+            testFolder = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "..", "..", "..", "test"));
             subFolder = Path.Combine(testFolder, "subfolder");
             subFolder2 = Path.Combine(subFolder, "subfolder2");
         }
@@ -77,12 +77,12 @@ namespace CShellLibTests
         {
             ResetShell(testFolder);
 
-            cd(@"subfolder\subfolder2");
+            cd(Path.Combine("subfolder", "subfolder2"));
             Assert.AreEqual(subFolder2, CurrentFolder.FullName, "currentFolder relative path failed");
-            cd(@"..\subfolder2");
+            cd(Path.Combine("..", "subfolder2"));
             Assert.AreEqual(subFolder2, CurrentFolder.FullName, "currentFolder relative path failed2");
             Assert.AreEqual(2, FolderHistory.Count, "relative non-navigation shouldn't have created history record");
-            cd(@"..\..");
+            cd(Path.Combine("..", ".."));
             Assert.AreEqual(testFolder, CurrentFolder.FullName, "currentFolder relative path failed3");
             Assert.AreEqual(3, FolderHistory.Count, "history ignored on relative path");
             cd(subFolder2);
@@ -99,7 +99,7 @@ namespace CShellLibTests
             Assert.AreEqual("test", result);
             var result2 = shell.echo(new string[] { "test1", "test2", "test3" });
             var x = await result2.StandardOutput.ReadToEndAsync();
-            Assert.AreEqual("test1\r\ntest2\r\ntest3\r\n", x);
+            Assert.AreEqual($"test1{Environment.NewLine}test2{Environment.NewLine}test3{Environment.NewLine}", x);
         }
 
         [TestMethod]

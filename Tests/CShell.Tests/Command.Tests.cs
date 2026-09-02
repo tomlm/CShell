@@ -6,6 +6,7 @@ using System.Text.Json.Serialization;
 using System;
 using System.IO;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 
 namespace CShellLibTests
@@ -42,7 +43,7 @@ namespace CShellLibTests
         [ClassInitialize()]
         public static void ClassInit(TestContext context)
         {
-            testFolder = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), @"..\..\..\test"));
+            testFolder = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "..", "..", "..", "test"));
             subFolder = Path.Combine(testFolder, "subfolder");
             subFolder2 = Path.Combine(subFolder, "subfolder2");
         }
@@ -189,12 +190,17 @@ namespace CShellLibTests
             }
         }
 
+
+        /// <summary>List one file, in whichever shell Cmd() runs: cmd.exe on Windows, bash elsewhere.</summary>
+        private static string ListTestA =>
+            RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "dir /b TestA.txt" : "ls TestA.txt";
+
         [TestMethod]
         public async Task Test_Cmd()
         {
             CShell shell = new CShell();
             shell.cd(testFolder);
-            var result = await shell.Cmd("dir /b TestA.txt").AsString();
+            var result = await shell.Cmd(ListTestA).AsString();
             Assert.AreEqual("TestA.txt", result.Trim(), "AsString");
         }
 
@@ -227,7 +233,7 @@ namespace CShellLibTests
             Assert.IsTrue(result.Success);
             try
             {
-                result = await shell.Start("xxxxxtest.cmd").Execute();
+                result = await shell.Start("xxxxx-no-such-program").Execute();
                 Assert.Fail("Should have thrown execption)");
             }
             catch 
@@ -253,7 +259,7 @@ namespace CShellLibTests
         {
             CShell shell = new CShell();
             shell.cd(testFolder);
-            var commandResult = await shell.Cmd("dir /b TestA.txt").Execute(true);
+            var commandResult = await shell.Cmd(ListTestA).Execute(true);
         }
 
     }
