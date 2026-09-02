@@ -1,4 +1,4 @@
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.IO;
 using System.Linq;
@@ -17,7 +17,7 @@ namespace CShellLibTests
         [ClassInitialize()]
         public static void ClassInit(TestContext context)
         {
-            testFolder = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), @"..\..\..\test"));
+            testFolder = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "..", "..", "..", "test"));
             subFolder = Path.Combine(testFolder, "subfolder");
             subFolder2 = Path.Combine(subFolder, "subfolder2");
         }
@@ -97,12 +97,12 @@ namespace CShellLibTests
             Environment.CurrentDirectory = testFolder;
 
             var shell = new CShell();
-            shell.cd(@"subfolder\subfolder2");
+            shell.cd(Path.Combine("subfolder", "subfolder2"));
             Assert.AreEqual(subFolder2, shell.CurrentFolder.FullName, "currentFolder relative path failed");
-            shell.cd(@"..\subfolder2");
+            shell.cd(Path.Combine("..", "subfolder2"));
             Assert.AreEqual(subFolder2, shell.CurrentFolder.FullName, "currentFolder relative path failed2");
             Assert.AreEqual(2, shell.FolderHistory.Count, "relative non-navigation shouldn't have created history record");
-            shell.cd(@"..\..");
+            shell.cd(Path.Combine("..", ".."));
             Assert.AreEqual(testFolder, shell.CurrentFolder.FullName, "currentFolder relative path failed3");
             Assert.AreEqual(3, shell.FolderHistory.Count, "history ignored on relative path");
             shell.cd(subFolder2);
@@ -224,7 +224,7 @@ namespace CShellLibTests
             Assert.AreEqual("test", result);
             var result2 = shell.echo(new string[] { "test1", "test2", "test3" });
             var x = await result2.StandardOutput.ReadToEndAsync();
-            Assert.AreEqual("test1\r\ntest2\r\ntest3\r\n", x);
+            Assert.AreEqual($"test1{Environment.NewLine}test2{Environment.NewLine}test3{Environment.NewLine}", x);
         }
 
         [TestMethod]

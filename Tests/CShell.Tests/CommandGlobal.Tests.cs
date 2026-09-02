@@ -1,11 +1,12 @@
-global using static CShellNet.Globals;
+﻿global using static CShellNet.Globals;
 global using CShellNet;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using System;
 using System.IO;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 
 namespace CShellLibTests
@@ -20,7 +21,7 @@ namespace CShellLibTests
         [ClassInitialize()]
         public static void ClassInit(TestContext context)
         {
-            testFolder = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), @"..\..\..\test"));
+            testFolder = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "..", "..", "..", "test"));
             subFolder = Path.Combine(testFolder, "subfolder");
             subFolder2 = Path.Combine(subFolder, "subfolder2");
         }
@@ -30,11 +31,11 @@ namespace CShellLibTests
         {
             ResetShell(testFolder);
 
-            var result = await Run("cmd", "/c", "echo this is a yo yo").AsString();
+            var result = await Run(ShellExe, ShellFlag, "echo this is a yo yo").AsString();
             Assert.AreEqual("this is a yo yo", result.Trim(), "AsString");
 
             var record = await ReadFile("TestA.txt").AsString();
-            var text = File.ReadAllText(Path.Combine(testFolder, "TestA.Txt"));
+            var text = File.ReadAllText(Path.Combine(testFolder, "TestA.txt"));
             Assert.AreEqual(record, text, "AsString");
         }
 
@@ -48,13 +49,13 @@ namespace CShellLibTests
             Assert.AreEqual("Joe Smith", record.Name, "name is wrong");
             Assert.AreEqual(42, record.Age, "age is wrong");
 
-            JObject record2 = (JObject)await ReadFile("TestA.txt").AsJson();
-            Assert.AreEqual("Joe Smith", (string)record2["name"], "JOBject name is wrong");
-            Assert.AreEqual(42, (int)record2["age"], "JOBject age is wrong");
+            JsonNode record2 = await ReadFile("TestA.txt").AsJson();
+            Assert.AreEqual("Joe Smith", (string)record2["name"], "JsonNode name is wrong");
+            Assert.AreEqual(42, (int)record2["age"], "JsonNode age is wrong");
 
-            dynamic record3 = await ReadFile("TestA.txt").AsJson();
-            Assert.AreEqual("Joe Smith", (string)record3.name, "dynamic name is wrong");
-            Assert.AreEqual(42, (int)record3.age, "dynamic age is wrong");
+            // Nested indexing is how a JsonNode is navigated. Member access -- record.name --
+            // came from the Newtonsoft JObject and is gone with it.
+            Assert.IsNull(record2["nope"], "a missing property reads as null");
         }
 
 
@@ -76,14 +77,15 @@ namespace CShellLibTests
             ResetShell(testFolder);
 
             var result = await ReadFile("TestA.txt").AsResult();
-            var text = File.ReadAllText(Path.Combine(testFolder, "TestA.Txt"));
+            var text = File.ReadAllText(Path.Combine(testFolder, "TestA.txt"));
             Assert.AreEqual(text, result.StandardOutput, "result stdout");
             Assert.AreEqual("", result.StandardError, "result stderr");
 
 
             var badResult = await ReadFile("sdfsdffd.txt").AsResult();
             Assert.AreEqual("", badResult.StandardOutput, "result stdout");
-            Assert.AreEqual("The system cannot find the file specified.", badResult.StandardError.Trim(), "result stderr");
+            Assert.IsFalse(badResult.Success, "reading a file that is not there should fail");
+            Assert.AreNotEqual(String.Empty, badResult.StandardError.Trim(), "and should say so on stderr");
         }
 
         [TestMethod]
@@ -120,7 +122,7 @@ namespace CShellLibTests
             }
             catch (Exception err)
             {
-                Assert.IsTrue(err.Message.Contains("The system cannot find the file specified."));
+                Assert.IsTrue(err.Message.Contains("xyz"));
             }
         }
 
@@ -137,7 +139,7 @@ namespace CShellLibTests
             }
             catch (Exception err)
             {
-                Assert.IsTrue(err.Message.Contains("The system cannot find the file specified."));
+                Assert.IsTrue(err.Message.Contains("xyz"));
             }
         }
 
@@ -154,16 +156,27 @@ namespace CShellLibTests
             }
             catch (Exception err)
             {
-                Assert.IsTrue(err.Message.Contains("The system cannot find the file specified."));
+                Assert.IsTrue(err.Message.Contains("xyz"));
             }
         }
+
+
+        private static bool IsWindows => RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+
+        /// <summary>The shell to hand a command line to, and the flag that says "run this".</summary>
+        private static string ShellExe => IsWindows ? "cmd" : "bash";
+
+        private static string ShellFlag => IsWindows ? "/c" : "-c";
+
+        /// <summary>List one file, in whichever shell Cmd() runs: cmd.exe on Windows, bash elsewhere.</summary>
+        private static string ListTestA => IsWindows ? "dir /b TestA.txt" : "ls TestA.txt";
 
         [TestMethod]
         public async Task Test_Global_Cmd()
         {
 
             ResetShell(testFolder);
-            var result = await Cmd("dir /b TestA.txt").AsString();
+            var result = await Cmd(ListTestA).AsString();
             Assert.AreEqual("TestA.txt", result.Trim(), "AsString");
         }
 
@@ -195,7 +208,7 @@ namespace CShellLibTests
             Assert.IsTrue(result.Success);
             try
             {
-                result = await Start("xxxxxtest.cmd").Execute();
+                result = await Start("xxxxx-no-such-program").Execute();
                 Assert.Fail("Should have thrown execption)");
             }
             catch 
@@ -223,7 +236,7 @@ namespace CShellLibTests
         {
 
             ResetShell(testFolder);
-            var commandResult = await Cmd("dir /b TestA.txt").Execute(true);
+            var commandResult = await Cmd(ListTestA).Execute(true);
         }
 
     }

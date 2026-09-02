@@ -1,10 +1,12 @@
-using CShellNet;
+﻿using CShellNet;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
+using System.Text.Json;
+using System.Text.Json.Nodes;
+using System.Text.Json.Serialization;
 using System;
 using System.IO;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 
 namespace CShellLibTests
@@ -16,10 +18,18 @@ namespace CShellLibTests
 
         }
 
-        [JsonProperty("name")]
+        [JsonPropertyName("name")]
         public string Name { get; set; }
 
-        [JsonProperty("age")]
+        [JsonPropertyName("age")]
+        public int Age { get; set; }
+    }
+
+    /// <summary>The same shape with no attributes, so nothing but case-insensitive matching can fill it.</summary>
+    public class UnmappedRecord
+    {
+        public string Name { get; set; }
+
         public int Age { get; set; }
     }
 
@@ -33,7 +43,7 @@ namespace CShellLibTests
         [ClassInitialize()]
         public static void ClassInit(TestContext context)
         {
-            testFolder = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), @"..\..\..\test"));
+            testFolder = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "..", "..", "..", "test"));
             subFolder = Path.Combine(testFolder, "subfolder");
             subFolder2 = Path.Combine(subFolder, "subfolder2");
         }
@@ -44,11 +54,11 @@ namespace CShellLibTests
             CShell shell = new CShell();
             shell.cd(testFolder);
 
-            var result = await shell.Run("cmd", "/c", "echo this is a yo yo").AsString();
+            var result = await shell.Run(ShellExe, ShellFlag, "echo this is a yo yo").AsString();
             Assert.AreEqual("this is a yo yo", result.Trim(), "AsString");
 
             var record = await shell.ReadFile("TestA.txt").AsString();
-            var text = File.ReadAllText(Path.Combine(testFolder, "TestA.Txt"));
+            var text = File.ReadAllText(Path.Combine(testFolder, "TestA.txt"));
             Assert.AreEqual(record, text, "AsString");
         }
 
@@ -62,13 +72,20 @@ namespace CShellLibTests
             Assert.AreEqual("Joe Smith", record.Name, "name is wrong");
             Assert.AreEqual(42, record.Age, "age is wrong");
 
-            JObject record2 = (JObject)await shell.ReadFile("TestA.txt").AsJson();
-            Assert.AreEqual("Joe Smith", (string)record2["name"], "JOBject name is wrong");
-            Assert.AreEqual(42, (int)record2["age"], "JOBject age is wrong");
+            JsonNode record2 = await shell.ReadFile("TestA.txt").AsJson();
+            Assert.AreEqual("Joe Smith", (string)record2["name"], "JsonNode name is wrong");
+            Assert.AreEqual(42, (int)record2["age"], "JsonNode age is wrong");
 
-            dynamic record3 = await shell.ReadFile("TestA.txt").AsJson();
-            Assert.AreEqual("Joe Smith", (string)record3.name, "dynamic name is wrong");
-            Assert.AreEqual(42, (int)record3.age, "dynamic age is wrong");
+            // Nested indexing is how a JsonNode is navigated. Member access -- record.name --
+            // came from the Newtonsoft JObject and is gone with it.
+            Assert.IsNull(record2["nope"], "a missing property reads as null");
+
+            // System.Text.Json matches property names case sensitively by default, which would
+            // leave both of these at their defaults rather than failing. CShell turns that off,
+            // because CLI tools emit camelCase and the C# modelling them is PascalCase.
+            var unmapped = await shell.ReadFile("TestA.txt").AsJson<UnmappedRecord>();
+            Assert.AreEqual("Joe Smith", unmapped.Name, "lowercase json must still fill a PascalCase property");
+            Assert.AreEqual(42, unmapped.Age, "lowercase json must still fill a PascalCase property");
         }
 
 
@@ -91,14 +108,15 @@ namespace CShellLibTests
             shell.cd(testFolder);
 
             var result = await shell.ReadFile("TestA.txt").AsResult();
-            var text = File.ReadAllText(Path.Combine(testFolder, "TestA.Txt"));
+            var text = File.ReadAllText(Path.Combine(testFolder, "TestA.txt"));
             Assert.AreEqual(text, result.StandardOutput, "result stdout");
             Assert.AreEqual("", result.StandardError, "result stderr");
 
 
             var badResult = await shell.ReadFile("sdfsdffd.txt").AsResult();
             Assert.AreEqual("", badResult.StandardOutput, "result stdout");
-            Assert.AreEqual("The system cannot find the file specified.", badResult.StandardError.Trim(), "result stderr");
+            Assert.IsFalse(badResult.Success, "reading a file that is not there should fail");
+            Assert.AreNotEqual(String.Empty, badResult.StandardError.Trim(), "and should say so on stderr");
         }
 
         [TestMethod]
@@ -135,7 +153,7 @@ namespace CShellLibTests
             }
             catch (Exception err)
             {
-                Assert.IsTrue(err.Message.Contains("The system cannot find the file specified."));
+                Assert.IsTrue(err.Message.Contains("xyz"));
             }
         }
 
@@ -152,7 +170,7 @@ namespace CShellLibTests
             }
             catch (Exception err)
             {
-                Assert.IsTrue(err.Message.Contains("The system cannot find the file specified."));
+                Assert.IsTrue(err.Message.Contains("xyz"));
             }
         }
 
@@ -169,16 +187,27 @@ namespace CShellLibTests
             }
             catch (Exception err)
             {
-                Assert.IsTrue(err.Message.Contains("The system cannot find the file specified."));
+                Assert.IsTrue(err.Message.Contains("xyz"));
             }
         }
+
+
+        private static bool IsWindows => RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+
+        /// <summary>The shell to hand a command line to, and the flag that says "run this".</summary>
+        private static string ShellExe => IsWindows ? "cmd" : "bash";
+
+        private static string ShellFlag => IsWindows ? "/c" : "-c";
+
+        /// <summary>List one file, in whichever shell Cmd() runs: cmd.exe on Windows, bash elsewhere.</summary>
+        private static string ListTestA => IsWindows ? "dir /b TestA.txt" : "ls TestA.txt";
 
         [TestMethod]
         public async Task Test_Cmd()
         {
             CShell shell = new CShell();
             shell.cd(testFolder);
-            var result = await shell.Cmd("dir /b TestA.txt").AsString();
+            var result = await shell.Cmd(ListTestA).AsString();
             Assert.AreEqual("TestA.txt", result.Trim(), "AsString");
         }
 
@@ -211,7 +240,7 @@ namespace CShellLibTests
             Assert.IsTrue(result.Success);
             try
             {
-                result = await shell.Start("xxxxxtest.cmd").Execute();
+                result = await shell.Start("xxxxx-no-such-program").Execute();
                 Assert.Fail("Should have thrown execption)");
             }
             catch 
@@ -237,7 +266,7 @@ namespace CShellLibTests
         {
             CShell shell = new CShell();
             shell.cd(testFolder);
-            var commandResult = await shell.Cmd("dir /b TestA.txt").Execute(true);
+            var commandResult = await shell.Cmd(ListTestA).Execute(true);
         }
 
     }

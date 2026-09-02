@@ -15,6 +15,10 @@ CShell provides:
 By maintaining the concept of a current folder  all file and folder commands can be take absolute or 
  relative paths just like a normal shell.
 
+CShell targets **net8.0** and depends only on
+[MedallionShell](https://github.com/madelson/MedallionShell). JSON is read with the in-box
+System.Text.Json.
+
 ### Properties
 CShell exposes 3 properties which are the working environment of your script.  The CurrentFolder is used to resolve relative paths for
 most methods, so if you call **MoveFile(@"..\foo.txt", @"..\..\bar")** it will resolve the paths and execute just like a normal shell.
@@ -26,6 +30,8 @@ most methods, so if you call **MoveFile(@"..\foo.txt", @"..\..\bar")** it will r
 | **FolderStack**   | current stack from Push/Pop operations         |
 | **Echo**          | Controls whether commands are echoed to output |
 | **ThrowOnError**  | Controls whether to throw exception when commands have non-sucess error code |
+| **RichPrompts**   | Whether the Ask methods use arrow keys or read a typed line. Null (the default) decides by asking whether standard input is redirected |
+| **ReadKey**       | Where the Ask methods get their keystrokes. Null reads the console |
 
 ### Folder Methods
 CShell defines a number of methods which work relative to the current folder to make it easy
@@ -68,6 +74,111 @@ WriteLine(13);
 print("Hello world!");
 error("ohoh!");
 ```
+
+### Prompting the user
+The **Ask**() family methods ask the user a question and return the answer.
+
+| Method           | Description                                                                                      |
+|------------------|--------------------------------------------------------------------------------------------------|
+| **AskText(question)** | read a line of text, trimmed |
+| **AskSecret(question)** | read without echoing anything, for tokens and passwords |
+| **AskYesNo(question)** | a yes/no question, returning bool |
+| **AskYesNo(question, default)** | the same, where enter accepts the default |
+| **AskNumber(question)** | a whole number |
+| **AskNumber(question, min, max)** | a whole number held inside a range |
+| **AskChoice(question, options, label)** | pick one from a list; returns the option itself |
+| **AskChoice(question, style, options, label)** | the same, choosing how the options are labelled |
+| **AskMultiChoice(question, options, label)** | pick any number of them; returns an array |
+| **AskMultiChoice(question, style, options, label)** | the same, choosing how the options are labelled |
+
+```CSharp
+var name    = AskText("What should I call you?");
+var token   = AskSecret("Paste a token:");            // nothing appears as it is typed
+var retries = AskNumber("How many retries?", 1, 5);
+var push    = AskYesNo("Push straight to main?", false);
+
+string[] fruits = ["apple", "banana", "cherry"];
+var fruit = AskChoice("Pick a fruit:", fruits);              // returns "banana", not 2
+var repo  = AskChoice("Pick a repo:", repos, r => r.Name);   // returns the Repo itself
+var extra = AskMultiChoice("Choose your toppings:", toppings);
+```
+
+* **AskChoice** and **AskMultiChoice** are generic and return the option itself, not its position.
+  The optional selector says what to show for each; without one they use `ToString()`.
+* With a console they draw arrow-key prompts; with input redirected they read a typed line.
+  `RichPrompts` forces either mode, `ReadKey` supplies the keystrokes.
+* An option's own text is matched before its position, so a list of `"3", "1", "2"` answers the
+  way it reads.
+* At end of stream they throw, naming the question, rather than returning an empty answer.
+
+`ChoiceStyle` sets the labels, and under `Letters` also what may be typed:
+
+| Style      | Renders            | A typed answer may be              |
+|------------|--------------------|------------------------------------|
+| **Auto**   | nothing with arrow keys, numbers when typed | the option's text, or its number |
+| **Numbers**| `1) 2) 3)`         | the option's text, or its number   |
+| **Letters**| `a) b) c)`         | the option's text, or its letter   |
+| **None**   | nothing            | the option's text only             |
+
+See **askdemo.csx** for a guided tour that shows each call and then runs it.
+
+### Command line
+**Cli** declares what a script accepts and reads the command line against it. An **Argument** is a
+positional, a **Switch** is on or off, an **Option** carries a value. The same three words read
+the values back.
+
+```CSharp
+var cmd = Cli.For(Args)
+    .Description("Opens a repository in GitHub Desktop.")
+    .OptionalArgument("path", "the repository to open; defaults to the current directory")
+    .WhatIf()
+    .Option("source", "the feed to use; defaults to nuget.org")
+    .Parse();
+
+var path   = cmd.Argument("path") ?? Directory.GetCurrentDirectory();
+var source = cmd.Option("source") ?? "https://api.nuget.org/v3/index.json";
+var whatIf = cmd.WhatIf;
+```
+
+| Declare on Cli   | Description                                                                                      |
+|------------------|--------------------------------------------------------------------------------------------------|
+| **Argument(name, help)** | a required positional, filled in declaration order |
+| **OptionalArgument(name, help)** | a positional that may be left out; reads back null |
+| **Rest(name, help)** | a tail collecting everything left, verbatim |
+| **Switch(name, help)** | a switch that is on or off; aliases go in the name after a pipe: `"whatif\|n"` |
+| **Option(name, help)** | a switch carrying a value, written attached: `-out:file` |
+| **WhatIf()** | declares the conventional dry run: `-whatif`, also `--dry-run` or `-n` |
+| **Description(text)** | the paragraph shown above the usage line |
+| **Example(commandLine, help)** | a worked example for the bottom of the help |
+| **Program(name)** | override the name in the usage line |
+| **UsageWhenEmpty()** | print the usage when run with no arguments at all |
+| **Parse()** | read the command line; prints and exits if it was not valid or help was asked for |
+| **TryParse()** | the same, reported through ShouldExit rather than acted on |
+
+| Read on CliResult | Description                                                                                     |
+|------------------|--------------------------------------------------------------------------------------------------|
+| **Argument(name)** | what was given for a positional, or null when an optional one was omitted |
+| **Switch(name)** | whether a switch was given |
+| **Option(name)** | the value given for an option, or null |
+| **WhatIf**       | whether the dry-run switch was given |
+| **Rest**         | everything the declared Rest collected |
+| **Arguments**    | every positional given, in order |
+| **Error**        | what was wrong with the command line, or null |
+| **UsageText**    | the generated help, whether or not it was shown |
+| **ProgramName**  | the name shown in the usage line |
+| **ShouldExit**   | *(TryParse only)* true when the script should stop |
+| **ExitCode**     | *(TryParse only)* 0 for help, 1 for a command line that was not valid |
+
+* Anything undeclared is an error. Bare words are positionals, not unknown switches.
+* Values attach: `-out:file` or `-out=file`, never `-out file`. Only the name is normalized, so
+  `-source:https://api.nuget.org/v3/index.json` arrives intact.
+* `-whatif`, `--whatif` and `--what-if` are one switch -- dashes come off, inner hyphens and
+  underscores go, case is ignored. `/` is not a prefix.
+* `-help`, `-h` and `-?` work without being declared, and the help is generated from the
+  declarations. The program name comes from the calling script's file name.
+* `Parse()` exits on a bad command line, so what it returns is always usable. `TryParse()` reports
+  through `ShouldExit`/`ExitCode` instead, and every other value on it throws until you check.
+* No subcommands, repeated options, typed binding, or separated values. For more complex cli support use something like [System.CommandLine](https://www.nuget.org/packages/System.CommandLine) directly.
 
 ### Process Methods
 CShell is built using [MedallionShell](https://github.com/madelson/MedallionShell), which provides a great set of functionality for easily invoking 
@@ -112,7 +223,7 @@ CShell adds on helper methods to make it even easier to work with the result of 
 |------------------|------------------------------------------------------------------------------|
 | **Execute(log)**    | get the CommandResult (with stdout/stderr) of the last command               |
 | **AsString(log)**   | get the standard out of the last command a string                            |
-| **AsJson(log)**     | JSON Deserialize the standard out of the last command into a JObject/dynamic |
+| **AsJson(log)**     | Parse the standard out of the last command as JSON: `json.owner.login`, `json["owner"]`, or assign it to a JsonObject |
 | **AsJson\<T>(log)** | JSON Deserialize the standard out of the last command into a typed T         |
 | **AsXml\<T>(log)**  | XML Deserialize the standard out of the last command intoa typed T           |
 | **AsFile()**     | Write the stdout/stderr  of the last command to a file                       |
@@ -122,6 +233,21 @@ To call a program you await on:
 1. call ReadFile()/Run()/Cmd()/Bash()/echo()
 2. call any chaining commands 
 3. end with a result call like Execute()/AsJson()/AsString()/AsXml()etc.
+
+`AsJson()` gives you a **JsonDynamic**, which reads whichever way suits the script:
+
+```CSharp
+var json = await Cmd("gh api repos/tomlm/CShell").AsJson();
+
+Console.WriteLine(json.owner.login);       // walk it with a dot
+Console.WriteLine(json["stargazers_count"]);
+foreach (var topic in json.topics) { }     // arrays enumerate
+
+JsonObject o = await Cmd("gh api repos/tomlm/CShell").AsJson();   // or take the typed API
+```
+
+A property that is not there reads as null, so `if (json.optional != null)` is how you test for
+one. Use `AsJson<T>()` where the shape is known.
 
 The result methods all take a log argument is passed set to true then the commands output will be written to standard out.
 
@@ -169,7 +295,7 @@ To invoke the template
 > NOTE: If you want debug support from visual studio code simply run **dotnet script init** in the same folder.
 
 ```csharp
-#r "nuget: CShell, 2.1.0"
+#r "nuget: CShell, 3.0.0"
 global using static CShellNet.Globals;
 using CShellNet;
 
@@ -206,7 +332,7 @@ On Linux/Mac you can make a .csx file executable by
 
 ```bash
 #!/usr/bin/env dotnet-script
-#r "nuget: CShell, 1.5.0"
+#r "nuget: CShell, 3.0.0"
 global using static CShellNet.Globals;
 using CShellNet;
 ```
@@ -235,9 +361,22 @@ chmod +x example.csx
 ```
 
 ## CHANGELOG
+### v3.0.0
+* Added **Cli**, a declarative command line parser with generated --help
+  * Argument()/OptionalArgument()/Rest() for positionals, Switch() for booleans, Option() for attached values
+  * anything undeclared is an error; Parse() exits on a bad command line, TryParse() reports instead
+* Added the **Ask** methods: AskText, AskSecret, AskYesNo, AskNumber, AskChoice, AskMultiChoice
+  * AskChoice/AskMultiChoice are generic and return the option itself rather than its position
+  * each has an arrow-key mode and a typed-line mode, chosen from whether input is redirected
+* Added **RichPrompts** and **ReadKey** to control how the Ask methods read input
+* **BREAKING** now targets net8.0 rather than netstandard2.0. .NET Framework is no longer supported
+* **BREAKING** replaced Newtonsoft.Json with System.Text.Json; MedallionShell is now the only dependency
+  * `AsJson()` returns a **JsonDynamic** as `dynamic`, so `json.owner.login` still works. It also indexes, enumerates, and converts to JsonNode/JsonObject/JsonArray. `AsJson<T>()` is unchanged
+  * property names still match case insensitively; trailing commas, comments and a byte order mark are tolerated
+
 ### v2.1.0
 * Added Write/WriteLine/print/error methods for writing to standard out and standard error
- 
+
 ### V1.5.2
 * Added Exists() methods to global
 

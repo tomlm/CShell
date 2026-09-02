@@ -1,5 +1,6 @@
 ﻿using Medallion.Shell;
-using Newtonsoft.Json;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.IO;
 using System.Xml.Serialization;
 
@@ -23,10 +24,15 @@ namespace CShellNet
         }
 
         /// <summary>
-        /// Convert StandardOutput of command to dynamic object using Json deserialization (JObject)
+        /// Parse the StandardOutput of a command as JSON.
         /// </summary>
+        /// <remarks>
+        /// Walk it with a dot -- `json.owner.login` -- or with an indexer, or assign it to a
+        /// JsonNode, JsonObject or JsonArray for the typed System.Text.Json API. The object behind
+        /// it is a JsonDynamic either way. Use AsJson&lt;T&gt;() where the shape is known.
+        /// </remarks>
         /// <param name="cmdResult"></param>
-        /// <returns></returns>
+        /// <returns>the parsed JSON, as a JsonDynamic</returns>
         public static dynamic AsJson(this CommandResult cmdResult)
         {
             if (!cmdResult.Success)
@@ -34,7 +40,7 @@ namespace CShellNet
                 throw new CommandResultException(cmdResult);
             }
 
-            return JsonConvert.DeserializeObject(cmdResult.StandardOutput);
+            return new JsonDynamic(JsonNode.Parse(Json.Clean(cmdResult.StandardOutput), null, Json.DocumentOptions));
         }
 
         /// <summary>
@@ -50,7 +56,7 @@ namespace CShellNet
                 throw new CommandResultException(cmdResult);
             }
 
-            return JsonConvert.DeserializeObject<T>(cmdResult.StandardOutput);
+            return JsonSerializer.Deserialize<T>(Json.Clean(cmdResult.StandardOutput), Json.Options);
         }
 
         /// <summary>
