@@ -75,8 +75,8 @@ print("Hello world!");
 error("ohoh!");
 ```
 
-### Asking the user
-The **Ask** methods ask the user a question and return the answer.
+### Prompting the user
+The **Ask**() family methods ask the user a question and return the answer.
 
 | Method           | Description                                                                                      |
 |------------------|--------------------------------------------------------------------------------------------------|
@@ -178,8 +178,7 @@ var whatIf = cmd.WhatIf;
   declarations. The program name comes from the calling script's file name.
 * `Parse()` exits on a bad command line, so what it returns is always usable. `TryParse()` reports
   through `ShouldExit`/`ExitCode` instead, and every other value on it throws until you check.
-* No subcommands, repeated options, typed binding, or separated values. For more,
-  reference [System.CommandLine](https://www.nuget.org/packages/System.CommandLine) directly.
+* No subcommands, repeated options, typed binding, or separated values. For more complex cli support use something like [System.CommandLine](https://www.nuget.org/packages/System.CommandLine) directly.
 
 ### Process Methods
 CShell is built using [MedallionShell](https://github.com/madelson/MedallionShell), which provides a great set of functionality for easily invoking 
@@ -377,7 +376,7 @@ chmod +x example.csx
 
 ### v2.1.0
 * Added Write/WriteLine/print/error methods for writing to standard out and standard error
- 
+
 ### V1.5.2
 * Added Exists() methods to global
 
