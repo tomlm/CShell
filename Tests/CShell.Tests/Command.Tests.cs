@@ -54,11 +54,11 @@ namespace CShellLibTests
             CShell shell = new CShell();
             shell.cd(testFolder);
 
-            var result = await shell.Run("cmd", "/c", "echo this is a yo yo").AsString();
+            var result = await shell.Run(ShellExe, ShellFlag, "echo this is a yo yo").AsString();
             Assert.AreEqual("this is a yo yo", result.Trim(), "AsString");
 
             var record = await shell.ReadFile("TestA.txt").AsString();
-            var text = File.ReadAllText(Path.Combine(testFolder, "TestA.Txt"));
+            var text = File.ReadAllText(Path.Combine(testFolder, "TestA.txt"));
             Assert.AreEqual(record, text, "AsString");
         }
 
@@ -108,14 +108,15 @@ namespace CShellLibTests
             shell.cd(testFolder);
 
             var result = await shell.ReadFile("TestA.txt").AsResult();
-            var text = File.ReadAllText(Path.Combine(testFolder, "TestA.Txt"));
+            var text = File.ReadAllText(Path.Combine(testFolder, "TestA.txt"));
             Assert.AreEqual(text, result.StandardOutput, "result stdout");
             Assert.AreEqual("", result.StandardError, "result stderr");
 
 
             var badResult = await shell.ReadFile("sdfsdffd.txt").AsResult();
             Assert.AreEqual("", badResult.StandardOutput, "result stdout");
-            Assert.AreEqual("The system cannot find the file specified.", badResult.StandardError.Trim(), "result stderr");
+            Assert.IsFalse(badResult.Success, "reading a file that is not there should fail");
+            Assert.AreNotEqual(String.Empty, badResult.StandardError.Trim(), "and should say so on stderr");
         }
 
         [TestMethod]
@@ -152,7 +153,7 @@ namespace CShellLibTests
             }
             catch (Exception err)
             {
-                Assert.IsTrue(err.Message.Contains("The system cannot find the file specified."));
+                Assert.IsTrue(err.Message.Contains("xyz"));
             }
         }
 
@@ -169,7 +170,7 @@ namespace CShellLibTests
             }
             catch (Exception err)
             {
-                Assert.IsTrue(err.Message.Contains("The system cannot find the file specified."));
+                Assert.IsTrue(err.Message.Contains("xyz"));
             }
         }
 
@@ -186,14 +187,20 @@ namespace CShellLibTests
             }
             catch (Exception err)
             {
-                Assert.IsTrue(err.Message.Contains("The system cannot find the file specified."));
+                Assert.IsTrue(err.Message.Contains("xyz"));
             }
         }
 
 
+        private static bool IsWindows => RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+
+        /// <summary>The shell to hand a command line to, and the flag that says "run this".</summary>
+        private static string ShellExe => IsWindows ? "cmd" : "bash";
+
+        private static string ShellFlag => IsWindows ? "/c" : "-c";
+
         /// <summary>List one file, in whichever shell Cmd() runs: cmd.exe on Windows, bash elsewhere.</summary>
-        private static string ListTestA =>
-            RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "dir /b TestA.txt" : "ls TestA.txt";
+        private static string ListTestA => IsWindows ? "dir /b TestA.txt" : "ls TestA.txt";
 
         [TestMethod]
         public async Task Test_Cmd()
