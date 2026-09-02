@@ -146,9 +146,6 @@ var cmd = Cli.For(Args)
     .Option("source", "the feed to use; defaults to nuget.org")
     .Parse();
 
-if (cmd.ShouldExit)
-    return cmd.ExitCode;
-
 var path   = cmd.Argument("path") ?? Directory.GetCurrentDirectory();
 var source = cmd.Option("source") ?? "https://api.nuget.org/v3/index.json";
 var whatIf = cmd.WhatIf;
@@ -166,12 +163,13 @@ var whatIf = cmd.WhatIf;
 | **Example(commandLine, help)** | a worked example for the bottom of the help |
 | **Program(name)** | override the name in the usage line |
 | **UsageWhenEmpty()** | print the usage when run with no arguments at all |
-| **Parse()** | read the command line and return a CliResult |
+| **Parse()** | read the command line; prints and exits if it was not valid or help was asked for |
+| **TryParse()** | the same, reported rather than acted on -- for tests, and for handling it yourself |
 
 | Read on CliResult | Description                                                                                     |
 |------------------|--------------------------------------------------------------------------------------------------|
-| **ShouldExit**   | true when the script should stop -- help was shown, or the command line was not valid |
-| **ExitCode**     | what to return: 0 for help, 1 for a command line that was not valid |
+| **ShouldExit**   | *(TryParse only)* true when the script should stop -- help was shown, or the line was not valid |
+| **ExitCode**     | *(TryParse only)* 0 for help, 1 for a command line that was not valid |
 | **Argument(name)** | what was given for a positional, or null when an optional one was omitted |
 | **Switch(name)** | whether a switch was given |
 | **Option(name)** | the value given for an option, or null |
@@ -201,6 +199,24 @@ prefix -- it would make every absolute path on Linux look like a switch.
 **Help is generated from the declarations**, so it cannot drift from what the script accepts.
 `-help`, `-h` and `-?` work without being asked for, and the program name comes from the calling
 script's file name.
+
+**Parse() stops the script itself** when the command line was not valid or help was asked for, so
+there is nothing to check: what it returns is always usable, and a line that was not understood
+never reaches the script body. The message has already gone to standard error, or the help to
+standard output, and the process has exited 1 or 0. It never throws for a bad command line -- a
+stack trace is the wrong way to say "you typed --dryrun" -- though it still throws for a mistake
+in the script itself, at the declaration that caused it.
+
+Use **TryParse()** where exiting is not acceptable: a test, or a command line parsed inside a
+larger program that means to handle the failure itself. It reports through `ShouldExit` and
+`ExitCode` instead, and forgetting to check them is caught rather than ignored -- every value on
+the result throws until you do, so a missed check fails loudly instead of running on with defaults
+it never earned.
+
+The ceiling, stated so nobody has to discover it: no subcommands, no repeated options, no typed
+binding, and no separated values. A script that needs more than this can reference
+[System.CommandLine](https://www.nuget.org/packages/System.CommandLine) directly -- it targets
+netstandard2.0, so a `.csx` can `#r` it without CShell being involved.
 
 
 ### Process Methods
@@ -372,7 +388,7 @@ chmod +x example.csx
 ### v3.0.0
 * Added **Cli**, a declarative command line parser with generated --help
   * Argument()/OptionalArgument()/Rest() for positionals, Switch() for booleans, Option() for attached values
-  * anything undeclared is an error; Parse() reports and sets ShouldExit rather than exiting the process
+  * anything undeclared is an error; Parse() reports it and exits, TryParse() hands it back instead
 * Added the **Ask** methods: AskText, AskSecret, AskYesNo, AskNumber, AskChoice, AskMultiChoice
   * AskChoice/AskMultiChoice are generic and return the option itself rather than its position
   * each has a rich arrow-key mode and a typed-line mode, chosen from whether input is redirected

@@ -52,8 +52,8 @@ namespace CShellLibTests
         [TestMethod]
         public void Switch_IsTrueWhenGivenAndFalseWhenAbsent()
         {
-            Assert.IsTrue(Given("-whatif").Switch("whatif", "touch nothing").Parse().Switch("whatif"));
-            Assert.IsFalse(Given().Switch("whatif", "touch nothing").Parse().Switch("whatif"));
+            Assert.IsTrue(Given("-whatif").Switch("whatif", "touch nothing").TryParse().Switch("whatif"));
+            Assert.IsFalse(Given().Switch("whatif", "touch nothing").TryParse().Switch("whatif"));
         }
 
         [TestMethod]
@@ -61,7 +61,7 @@ namespace CShellLibTests
         {
             foreach (var spelling in new[] { "-whatif", "--whatif" })
             {
-                Assert.IsTrue(Given(spelling).Switch("whatif", "touch nothing").Parse().Switch("whatif"), spelling);
+                Assert.IsTrue(Given(spelling).Switch("whatif", "touch nothing").TryParse().Switch("whatif"), spelling);
             }
         }
 
@@ -70,7 +70,7 @@ namespace CShellLibTests
         {
             foreach (var spelling in new[] { "--DRY-RUN", "--dryrun", "-Dry_Run", "--d-r-y-r-u-n" })
             {
-                Assert.IsTrue(Given(spelling).Switch("dry-run", "print only").Parse().Switch("dry-run"), spelling);
+                Assert.IsTrue(Given(spelling).Switch("dry-run", "print only").TryParse().Switch("dry-run"), spelling);
             }
         }
 
@@ -79,24 +79,24 @@ namespace CShellLibTests
         {
             foreach (var spelling in new[] { "-whatif", "--dry-run", "-n" })
             {
-                Assert.IsTrue(Given(spelling).Switch("whatif|dry-run|n", "touch nothing").Parse().Switch("whatif"), spelling);
+                Assert.IsTrue(Given(spelling).Switch("whatif|dry-run|n", "touch nothing").TryParse().Switch("whatif"), spelling);
             }
 
             // and it reads back under any of its names
-            var cmd = Given("-n").Switch("whatif|dry-run|n", "touch nothing").Parse();
+            var cmd = Given("-n").Switch("whatif|dry-run|n", "touch nothing").TryParse();
             Assert.IsTrue(cmd.Switch("dry-run"));
         }
 
         [TestMethod]
         public void Switch_RepeatedIsStillJustTrue()
         {
-            Assert.IsTrue(Given("-whatif", "--whatif").Switch("whatif", "touch nothing").Parse().Switch("whatif"));
+            Assert.IsTrue(Given("-whatif", "--whatif").Switch("whatif", "touch nothing").TryParse().Switch("whatif"));
         }
 
         [TestMethod]
         public void Switch_GivenAValueIsAnError()
         {
-            var cmd = Given("-whatif:true").Switch("whatif", "touch nothing").Parse();
+            var cmd = Given("-whatif:true").Switch("whatif", "touch nothing").TryParse();
 
             Assert.IsTrue(cmd.ShouldExit);
             Assert.AreEqual(1, cmd.ExitCode);
@@ -106,7 +106,7 @@ namespace CShellLibTests
         [TestMethod]
         public void Switch_ReadingAnUndeclaredNameThrowsAndSaysWhatWasDeclared()
         {
-            var cmd = Given().Switch("whatif", "touch nothing").Parse();
+            var cmd = Given().Switch("whatif", "touch nothing").TryParse();
 
             var thrown = Assert.Throws<ArgumentException>(() => cmd.Switch("nopush"));
             StringAssert.Contains(thrown.Message, "nopush");
@@ -185,16 +185,16 @@ namespace CShellLibTests
         [TestMethod]
         public void Option_TakesItsValueAfterAColonOrAnEquals()
         {
-            Assert.AreEqual("test", Given("-folder:test").Option("folder", "the folder").Parse().Option("folder"));
-            Assert.AreEqual("test", Given("-folder=test").Option("folder", "the folder").Parse().Option("folder"));
-            Assert.AreEqual("test", Given("--folder:test").Option("folder", "the folder").Parse().Option("folder"));
+            Assert.AreEqual("test", Given("-folder:test").Option("folder", "the folder").TryParse().Option("folder"));
+            Assert.AreEqual("test", Given("-folder=test").Option("folder", "the folder").TryParse().Option("folder"));
+            Assert.AreEqual("test", Given("--folder:test").Option("folder", "the folder").TryParse().Option("folder"));
 
         }
 
         [TestMethod]
         public void Option_IsNullWhenNotGiven()
         {
-            Assert.IsNull(Given().Option("folder", "the folder").Parse().Option("folder"));
+            Assert.IsNull(Given().Option("folder", "the folder").TryParse().Option("folder"));
         }
 
         [TestMethod]
@@ -202,7 +202,7 @@ namespace CShellLibTests
         {
             // The whole point of splitting before normalising: --API-KEY finds the option, and
             // the key it carries is untouched.
-            var cmd = Given("--API-KEY:sk-ant-AbC123").Option("api-key", "the key").Parse();
+            var cmd = Given("--API-KEY:sk-ant-AbC123").Option("api-key", "the key").TryParse();
 
             Assert.AreEqual("sk-ant-AbC123", cmd.Option("api-key"));
         }
@@ -210,7 +210,7 @@ namespace CShellLibTests
         [TestMethod]
         public void Option_ValueKeepsItsCaseAndHyphens()
         {
-            var cmd = Given(@"-out:C:\temp\My-Folder").Option("out", "where to write").Parse();
+            var cmd = Given(@"-out:C:\temp\My-Folder").Option("out", "where to write").TryParse();
 
             Assert.AreEqual(@"C:\temp\My-Folder", cmd.Option("out"));
         }
@@ -219,10 +219,10 @@ namespace CShellLibTests
         public void Option_SplitsOnTheFirstSeparatorOnlySoAValueMayContainMore()
         {
             Assert.AreEqual("https://api.nuget.org/v3/index.json",
-                Given("-source:https://api.nuget.org/v3/index.json").Option("source", "the feed").Parse().Option("source"));
+                Given("-source:https://api.nuget.org/v3/index.json").Option("source", "the feed").TryParse().Option("source"));
 
-            Assert.AreEqual("a=b=c", Given("-q:a=b=c").Option("q", "a query").Parse().Option("q"));
-            Assert.AreEqual(@"C:\temp", Given(@"-out=C:\temp").Option("out", "where to write").Parse().Option("out"));
+            Assert.AreEqual("a=b=c", Given("-q:a=b=c").Option("q", "a query").TryParse().Option("q"));
+            Assert.AreEqual(@"C:\temp", Given(@"-out=C:\temp").Option("out", "where to write").TryParse().Option("out"));
         }
 
         [TestMethod]
@@ -230,7 +230,7 @@ namespace CShellLibTests
         {
             foreach (var spelling in new[] { "--api-key:x", "--apikey:x", "-API_KEY:x" })
             {
-                Assert.AreEqual("x", Given(spelling).Option("api-key", "the key").Parse().Option("api-key"), spelling);
+                Assert.AreEqual("x", Given(spelling).Option("api-key", "the key").TryParse().Option("api-key"), spelling);
             }
         }
 
@@ -239,7 +239,7 @@ namespace CShellLibTests
         {
             // This is what catches someone typing the separated "--folder test" habit, instead of
             // letting "test" slide through as a positional.
-            var cmd = Given("-folder").Option("folder", "the folder").Parse();
+            var cmd = Given("-folder").Option("folder", "the folder").TryParse();
 
             Assert.IsTrue(cmd.ShouldExit);
             Assert.AreEqual(1, cmd.ExitCode);
@@ -250,14 +250,14 @@ namespace CShellLibTests
         [TestMethod]
         public void Option_GivenAnEmptyValueIsAnError()
         {
-            Assert.IsTrue(Given("-folder:").Option("folder", "the folder").Parse().ShouldExit);
+            Assert.IsTrue(Given("-folder:").Option("folder", "the folder").TryParse().ShouldExit);
             StringAssert.Contains(this.Errors, "needs a value");
         }
 
         [TestMethod]
         public void Option_GivenTwiceIsAnError()
         {
-            var cmd = Given("-source:a", "-source:b").Option("source", "the feed").Parse();
+            var cmd = Given("-source:a", "-source:b").Option("source", "the feed").TryParse();
 
             Assert.IsTrue(cmd.ShouldExit);
             StringAssert.Contains(this.Errors, "more than once");
@@ -268,12 +268,12 @@ namespace CShellLibTests
         {
             // A secret must not reach stderr because the user typed it twice, or typed the
             // separated form and left it dangling.
-            Given("--api-key:sk-ant-SECRET", "--api-key:sk-ant-OTHER").Option("api-key", "the key").Parse();
+            Given("--api-key:sk-ant-SECRET", "--api-key:sk-ant-OTHER").Option("api-key", "the key").TryParse();
             Assert.IsFalse(this.Errors.Contains("SECRET"), "an option's value must never be echoed");
             Assert.IsFalse(this.Errors.Contains("OTHER"), "an option's value must never be echoed");
 
             Capture();
-            Given("--api-key", "sk-ant-SECRET").Option("api-key", "the key").Parse();
+            Given("--api-key", "sk-ant-SECRET").Option("api-key", "the key").TryParse();
             Assert.IsFalse(this.Errors.Contains("SECRET"),
                 "the token after a bare option must not be echoed as an unexpected argument either");
         }
@@ -283,7 +283,7 @@ namespace CShellLibTests
         [TestMethod]
         public void Unknown_SwitchIsAnErrorNamingTheRawToken()
         {
-            var cmd = Given("--dryrun").Switch("nopush", "leave the push").Parse();
+            var cmd = Given("--dryrun").Switch("nopush", "leave the push").TryParse();
 
             Assert.IsTrue(cmd.ShouldExit);
             Assert.AreEqual(1, cmd.ExitCode);
@@ -293,7 +293,7 @@ namespace CShellLibTests
         [TestMethod]
         public void Unknown_SwitchGoesToStandardErrorNotStandardOut()
         {
-            Given("--nope").Switch("whatif", "touch nothing").Parse();
+            Given("--nope").Switch("whatif", "touch nothing").TryParse();
 
             StringAssert.Contains(this.Errors, "unknown switch");
             Assert.AreEqual(String.Empty, this.Screen, "an error is not output");
@@ -302,7 +302,7 @@ namespace CShellLibTests
         [TestMethod]
         public void Unknown_SwitchPointsAtHelpRatherThanPrintingIt()
         {
-            Given("--nope").Switch("whatif", "touch nothing").Parse();
+            Given("--nope").Switch("whatif", "touch nothing").TryParse();
 
             StringAssert.Contains(this.Errors, "Try 'demo --help'");
             Assert.IsFalse(this.Errors.Contains("Switches:"), "the full usage is noise here");
@@ -311,7 +311,7 @@ namespace CShellLibTests
         [TestMethod]
         public void Unknown_SwitchesAreAllReportedAtOnce()
         {
-            Given("--nope", "--alsonope").Switch("whatif", "touch nothing").Parse();
+            Given("--nope", "--alsonope").Switch("whatif", "touch nothing").TryParse();
 
             StringAssert.Contains(this.Errors, "'--nope'");
             StringAssert.Contains(this.Errors, "'--alsonope'");
@@ -321,13 +321,13 @@ namespace CShellLibTests
         public void Unknown_ATypoThatNormalisesToADeclaredSwitchIsNotUnknown()
         {
             // "--dryrun" for "--dry-run" is the bug this closes: today it becomes a path.
-            Assert.IsTrue(Given("--dryrun").Switch("dry-run", "print only").Parse().Switch("dry-run"));
+            Assert.IsTrue(Given("--dryrun").Switch("dry-run", "print only").TryParse().Switch("dry-run"));
         }
 
         [TestMethod]
         public void Unknown_SwitchErrorsSuppressPositionalErrors()
         {
-            var cmd = Given("--nope", "extra1", "extra2").Switch("whatif", "touch nothing").Parse();
+            var cmd = Given("--nope", "extra1", "extra2").Switch("whatif", "touch nothing").TryParse();
 
             Assert.IsTrue(cmd.ShouldExit);
             StringAssert.Contains(this.Errors, "unknown switch");
@@ -340,7 +340,7 @@ namespace CShellLibTests
         [TestMethod]
         public void Argument_FillsInDeclarationOrder()
         {
-            var cmd = Given("in.txt", "out").Argument("file", "the file").Argument("output", "the folder").Parse();
+            var cmd = Given("in.txt", "out").Argument("file", "the file").Argument("output", "the folder").TryParse();
 
             Assert.AreEqual("in.txt", cmd.Argument("file"));
             Assert.AreEqual("out", cmd.Argument("output"));
@@ -349,7 +349,7 @@ namespace CShellLibTests
         [TestMethod]
         public void Argument_MayBeInterspersedWithSwitches()
         {
-            var cmd = Given("repo", "-whatif").OptionalArgument("repo", "the repo").Switch("whatif", "touch nothing").Parse();
+            var cmd = Given("repo", "-whatif").OptionalArgument("repo", "the repo").Switch("whatif", "touch nothing").TryParse();
 
             Assert.AreEqual("repo", cmd.Argument("repo"));
             Assert.IsTrue(cmd.Switch("whatif"));
@@ -358,7 +358,7 @@ namespace CShellLibTests
         [TestMethod]
         public void Argument_MissingRequiredIsAnErrorNamingIt()
         {
-            var cmd = Given().Argument("file", "the file").Parse();
+            var cmd = Given().Argument("file", "the file").TryParse();
 
             Assert.IsTrue(cmd.ShouldExit);
             Assert.AreEqual(1, cmd.ExitCode);
@@ -368,19 +368,19 @@ namespace CShellLibTests
         [TestMethod]
         public void Argument_OptionalMayBeOmittedAndReadsNull()
         {
-            Assert.IsNull(Given().OptionalArgument("path", "the path").Parse().Argument("path"));
-            Assert.AreEqual("x", Given("x").OptionalArgument("path", "the path").Parse().Argument("path"));
+            Assert.IsNull(Given().OptionalArgument("path", "the path").TryParse().Argument("path"));
+            Assert.AreEqual("x", Given("x").OptionalArgument("path", "the path").TryParse().Argument("path"));
         }
 
         [TestMethod]
         public void Argument_TooManyIsAnErrorNamingTheUnexpectedOnes()
         {
-            var one = Given("a", "b").OptionalArgument("path", "the path").Parse();
+            var one = Given("a", "b").OptionalArgument("path", "the path").TryParse();
             Assert.IsTrue(one.ShouldExit);
             StringAssert.Contains(this.Errors, "unexpected argument 'b'");
 
             Capture();
-            Given("a", "b", "c").OptionalArgument("path", "the path").Parse();
+            Given("a", "b", "c").OptionalArgument("path", "the path").TryParse();
             StringAssert.Contains(this.Errors, "unexpected arguments: 'b' 'c'");
         }
 
@@ -390,19 +390,19 @@ namespace CShellLibTests
             // The reason '/' is recognised rather than demanded: an absolute path on Linux starts
             // with one.
             Assert.AreEqual("/home/tom/file",
-                Given("/home/tom/file").OptionalArgument("path", "the path").Parse().Argument("path"));
+                Given("/home/tom/file").OptionalArgument("path", "the path").TryParse().Argument("path"));
 
             Capture();
             Assert.AreEqual(@"C:\temp",
-                Given(@"C:\temp").OptionalArgument("path", "the path").Parse().Argument("path"));
+                Given(@"C:\temp").OptionalArgument("path", "the path").TryParse().Argument("path"));
 
             Capture();
             Assert.AreEqual("/tmp/x:y",
-                Given("/tmp/x:y").OptionalArgument("path", "the path").Parse().Argument("path"));
+                Given("/tmp/x:y").OptionalArgument("path", "the path").TryParse().Argument("path"));
 
             Capture();
             Assert.AreEqual("/usr/local/bin",
-                Given("/usr/local/bin").OptionalArgument("path", "the path").Parse().Argument("path"));
+                Given("/usr/local/bin").OptionalArgument("path", "the path").TryParse().Argument("path"));
         }
 
         [TestMethod]
@@ -410,10 +410,10 @@ namespace CShellLibTests
         {
             // '/' is not a switch prefix. Dashes are the standard, and treating '/' as a prefix
             // would make every absolute path on Linux something the parser had to recognise.
-            Assert.AreEqual("/nope", Given("/nope").OptionalArgument("path", "the path").Parse().Argument("path"));
+            Assert.AreEqual("/nope", Given("/nope").OptionalArgument("path", "the path").TryParse().Argument("path"));
 
             Capture();
-            var cmd = Given("/whatif").OptionalArgument("path", "the path").Switch("whatif", "touch nothing").Parse();
+            var cmd = Given("/whatif").OptionalArgument("path", "the path").Switch("whatif", "touch nothing").TryParse();
             Assert.AreEqual("/whatif", cmd.Argument("path"), "a slash token is a value, not the switch it resembles");
             Assert.IsFalse(cmd.Switch("whatif"));
         }
@@ -421,23 +421,23 @@ namespace CShellLibTests
         [TestMethod]
         public void Argument_ADashTokenIsAnUnknownSwitchNotAPositional()
         {
-            Assert.IsTrue(Given("-nope").OptionalArgument("path", "the path").Parse().ShouldExit);
+            Assert.IsTrue(Given("-nope").OptionalArgument("path", "the path").TryParse().ShouldExit);
             StringAssert.Contains(this.Errors, "unknown switch");
         }
 
         [TestMethod]
         public void Argument_NegativeNumbersAndABareDashArePositionals()
         {
-            Assert.AreEqual("-9", Given("-9").OptionalArgument("n", "a number").Parse().Argument("n"));
+            Assert.AreEqual("-9", Given("-9").OptionalArgument("n", "a number").TryParse().Argument("n"));
 
             Capture();
-            Assert.AreEqual("-", Given("-").OptionalArgument("n", "stdin").Parse().Argument("n"));
+            Assert.AreEqual("-", Given("-").OptionalArgument("n", "stdin").TryParse().Argument("n"));
         }
 
         [TestMethod]
         public void Argument_AfterTheTerminatorMayLookLikeASwitch()
         {
-            var cmd = Given("--", "-weird-name").OptionalArgument("path", "the path").Parse();
+            var cmd = Given("--", "-weird-name").OptionalArgument("path", "the path").TryParse();
 
             Assert.AreEqual("-weird-name", cmd.Argument("path"));
         }
@@ -445,7 +445,7 @@ namespace CShellLibTests
         [TestMethod]
         public void Argument_TheTerminatorIsNotItselfAPositional()
         {
-            var cmd = Given("a", "--", "b").Argument("one", "first").OptionalArgument("two", "second").Parse();
+            var cmd = Given("a", "--", "b").Argument("one", "first").OptionalArgument("two", "second").TryParse();
 
             Assert.AreEqual("a", cmd.Argument("one"));
             Assert.AreEqual("b", cmd.Argument("two"));
@@ -454,7 +454,7 @@ namespace CShellLibTests
         [TestMethod]
         public void Argument_ReadingAnUndeclaredNameThrows()
         {
-            var cmd = Given("x").OptionalArgument("path", "the path").Parse();
+            var cmd = Given("x").OptionalArgument("path", "the path").TryParse();
 
             Assert.Throws<ArgumentException>(() => cmd.Argument("nope"));
         }
@@ -462,7 +462,7 @@ namespace CShellLibTests
         [TestMethod]
         public void Argument_ArgumentsListsEveryPositionalInOrder()
         {
-            var cmd = Given("a", "b").Argument("one", "first").Argument("two", "second").Parse();
+            var cmd = Given("a", "b").Argument("one", "first").Argument("two", "second").TryParse();
 
             CollectionAssert.AreEqual(new[] { "a", "b" }, cmd.Arguments.ToArray());
         }
@@ -472,7 +472,7 @@ namespace CShellLibTests
         [TestMethod]
         public void Rest_CollectsWhatIsLeftVerbatim()
         {
-            var cmd = Given("cmd.exe", "/k", "dir").Argument("program", "what to run").Rest("args", "passed through").Parse();
+            var cmd = Given("cmd.exe", "/k", "dir").Argument("program", "what to run").Rest("args", "passed through").TryParse();
 
             Assert.AreEqual("cmd.exe", cmd.Argument("program"));
             CollectionAssert.AreEqual(new[] { "/k", "dir" }, cmd.Rest.ToArray());
@@ -486,7 +486,7 @@ namespace CShellLibTests
                 .Switch("whatif", "touch nothing")
                 .Argument("program", "what to run")
                 .Rest("args", "passed through")
-                .Parse();
+                .TryParse();
 
             Assert.IsFalse(cmd.ShouldExit, "--help after the program name is the child's, not ours");
             Assert.IsTrue(cmd.Switch("whatif"));
@@ -502,7 +502,7 @@ namespace CShellLibTests
                 .Switch("whatif", "touch nothing")
                 .Argument("program", "what to run")
                 .Rest("args", "passed through")
-                .Parse();
+                .TryParse();
 
             Assert.IsTrue(cmd.ShouldExit);
             StringAssert.Contains(this.Errors, "unknown switch '--whatf'");
@@ -511,7 +511,7 @@ namespace CShellLibTests
         [TestMethod]
         public void Rest_IsEmptyWhenNothingIsLeft()
         {
-            var cmd = Given("cmd.exe").Argument("program", "what to run").Rest("args", "passed through").Parse();
+            var cmd = Given("cmd.exe").Argument("program", "what to run").Rest("args", "passed through").TryParse();
 
             Assert.AreEqual(0, cmd.Rest.Count);
         }
@@ -519,7 +519,7 @@ namespace CShellLibTests
         [TestMethod]
         public void Rest_ReadingItUndeclaredThrows()
         {
-            var cmd = Given().Switch("whatif", "touch nothing").Parse();
+            var cmd = Given().Switch("whatif", "touch nothing").TryParse();
 
             Assert.Throws<InvalidOperationException>(() => { var ignored = cmd.Rest; });
         }
@@ -532,7 +532,7 @@ namespace CShellLibTests
             foreach (var spelling in new[] { "--help", "-h", "-?" })
             {
                 Capture();
-                var cmd = Given(spelling).Switch("whatif", "touch nothing").Parse();
+                var cmd = Given(spelling).Switch("whatif", "touch nothing").TryParse();
 
                 Assert.IsTrue(cmd.ShouldExit, spelling);
                 Assert.IsTrue(cmd.HelpRequested, spelling);
@@ -544,7 +544,7 @@ namespace CShellLibTests
         [TestMethod]
         public void Help_GoesToStandardOutNotStandardError()
         {
-            Given("--help").Switch("whatif", "touch nothing").Parse();
+            Given("--help").Switch("whatif", "touch nothing").TryParse();
 
             StringAssert.Contains(this.Screen, "Usage:");
             Assert.AreEqual(String.Empty, this.Errors);
@@ -553,7 +553,7 @@ namespace CShellLibTests
         [TestMethod]
         public void Help_WinsOverAnUnknownSwitchAndAMissingArgument()
         {
-            var cmd = Given("--nope", "--help").Argument("file", "the file").Parse();
+            var cmd = Given("--nope", "--help").Argument("file", "the file").TryParse();
 
             Assert.IsTrue(cmd.HelpRequested);
             Assert.AreEqual(0, cmd.ExitCode);
@@ -570,7 +570,7 @@ namespace CShellLibTests
                 .OptionalArgument("output", "output folder")
                 .Switch("whatif", "What if without execute")
                 .Option("source", "the feed to use")
-                .Parse();
+                .TryParse();
 
             StringAssert.Contains(this.Screen, "Does a thing.");
             StringAssert.Contains(this.Screen, "file");
@@ -585,7 +585,7 @@ namespace CShellLibTests
         [TestMethod]
         public void Help_ShowsRequiredAndOptionalArgumentsDifferently()
         {
-            Given("--help").Argument("file", "the file").OptionalArgument("output", "the folder").Parse();
+            Given("--help").Argument("file", "the file").OptionalArgument("output", "the folder").TryParse();
 
             StringAssert.Contains(this.Screen, "<file>");
             StringAssert.Contains(this.Screen, "[output]");
@@ -594,7 +594,7 @@ namespace CShellLibTests
         [TestMethod]
         public void Help_ShowsARestWithAnEllipsis()
         {
-            Given("--help").Argument("program", "what to run").Rest("args", "passed through").Parse();
+            Given("--help").Argument("program", "what to run").Rest("args", "passed through").TryParse();
 
             StringAssert.Contains(this.Screen, "[args...]");
         }
@@ -602,7 +602,7 @@ namespace CShellLibTests
         [TestMethod]
         public void Help_ListsAliasesBesideTheirSwitch()
         {
-            Given("--help").Switch("whatif|dry-run|n", "touch nothing").Parse();
+            Given("--help").Switch("whatif|dry-run|n", "touch nothing").TryParse();
 
             StringAssert.Contains(this.Screen, "--whatif, --dry-run, -n");
         }
@@ -610,7 +610,7 @@ namespace CShellLibTests
         [TestMethod]
         public void Help_NamesTheProgram()
         {
-            Given("--help").Switch("whatif", "touch nothing").Parse();
+            Given("--help").Switch("whatif", "touch nothing").TryParse();
 
             StringAssert.Contains(this.Screen, "demo");
         }
@@ -621,10 +621,10 @@ namespace CShellLibTests
             // A .csx or .csrun is named after its own file -- verified by hand under dotnet-script,
             // and untestable from here because this caller is a compiled .cs. What IS testable is
             // that the fallback never leaves the usage line blank, and that Program() wins.
-            var inferred = Cli.For(new string[0]).Switch("whatif", "touch nothing").Parse();
+            var inferred = Cli.For(new string[0]).Switch("whatif", "touch nothing").TryParse();
             Assert.IsFalse(String.IsNullOrWhiteSpace(inferred.ProgramName));
 
-            var told = Cli.For(new string[0]).Program("gho").Switch("whatif", "touch nothing").Parse();
+            var told = Cli.For(new string[0]).Program("gho").Switch("whatif", "touch nothing").TryParse();
             Assert.AreEqual("gho", told.ProgramName);
         }
 
@@ -633,7 +633,7 @@ namespace CShellLibTests
         {
             Given("--help").Description(@"
                 First line.
-                  Indented under it.").Parse();
+                  Indented under it.").TryParse();
 
             StringAssert.Contains(this.Screen, "First line.");
             StringAssert.Contains(this.Screen, "  Indented under it.");
@@ -645,7 +645,7 @@ namespace CShellLibTests
         {
             Given("--help").Switch("whatif", "touch nothing")
                 .Example("demo -whatif", "show what would happen")
-                .Parse();
+                .TryParse();
 
             StringAssert.Contains(this.Screen, "Examples:");
             StringAssert.Contains(this.Screen, "demo -whatif");
@@ -655,7 +655,7 @@ namespace CShellLibTests
         [TestMethod]
         public void Help_IsReadableAsAStringWithoutTouchingTheConsole()
         {
-            var cmd = Given().Switch("whatif", "touch nothing").Parse();
+            var cmd = Given().Switch("whatif", "touch nothing").TryParse();
 
             StringAssert.Contains(cmd.UsageText, "Usage:");
             Assert.AreEqual(String.Empty, this.Screen);
@@ -664,7 +664,7 @@ namespace CShellLibTests
         [TestMethod]
         public void Help_CanBeReplacedByTheScriptsOwn()
         {
-            Given("--help").Switch("help|h", "show the help my way").Parse();
+            Given("--help").Switch("help|h", "show the help my way").TryParse();
 
             StringAssert.Contains(this.Screen, "show the help my way");
             Assert.IsFalse(this.Screen.Contains("show this help"));
@@ -675,7 +675,7 @@ namespace CShellLibTests
         [TestMethod]
         public void UsageWhenEmpty_PrintsUsageAndExitsZeroForNoArguments()
         {
-            var cmd = Given().UsageWhenEmpty().Argument("file", "the file").Parse();
+            var cmd = Given().UsageWhenEmpty().Argument("file", "the file").TryParse();
 
             Assert.IsTrue(cmd.ShouldExit);
             Assert.AreEqual(0, cmd.ExitCode, "being shown the usage is not a failure");
@@ -685,7 +685,7 @@ namespace CShellLibTests
         [TestMethod]
         public void UsageWhenEmpty_IsOffUnlessAskedFor()
         {
-            var cmd = Given().Argument("file", "the file").Parse();
+            var cmd = Given().Argument("file", "the file").TryParse();
 
             Assert.AreEqual(1, cmd.ExitCode, "without it, a missing required argument is still an error");
             StringAssert.Contains(this.Errors, "missing <file>");
@@ -694,7 +694,7 @@ namespace CShellLibTests
         [TestMethod]
         public void UsageWhenEmpty_IsNotTriggeredWhenAnythingIsGiven()
         {
-            var cmd = Given("x").UsageWhenEmpty().Argument("file", "the file").Parse();
+            var cmd = Given("x").UsageWhenEmpty().Argument("file", "the file").TryParse();
 
             Assert.IsFalse(cmd.ShouldExit);
             Assert.AreEqual("x", cmd.Argument("file"));
@@ -707,21 +707,21 @@ namespace CShellLibTests
         {
             foreach (var spelling in new[] { "-whatif", "--dry-run", "--dryrun", "-n" })
             {
-                Assert.IsTrue(Given(spelling).WhatIf().Parse().WhatIf, spelling);
+                Assert.IsTrue(Given(spelling).WhatIf().TryParse().WhatIf, spelling);
             }
         }
 
         [TestMethod]
         public void WhatIf_IsFalseWhenNotGiven()
         {
-            Assert.IsFalse(Given().WhatIf().Parse().WhatIf);
+            Assert.IsFalse(Given().WhatIf().TryParse().WhatIf);
         }
 
         [TestMethod]
         public void WhatIf_ReadingItUndeclaredThrowsRatherThanAnsweringFalse()
         {
             // Answering false would mean a script that forgot .WhatIf() silently never rehearses.
-            var cmd = Given().Switch("nopush", "leave the push").Parse();
+            var cmd = Given().Switch("nopush", "leave the push").TryParse();
 
             var thrown = Assert.Throws<InvalidOperationException>(() => { var ignored = cmd.WhatIf; });
             StringAssert.Contains(thrown.Message, "never declared");
@@ -730,7 +730,7 @@ namespace CShellLibTests
         [TestMethod]
         public void WhatIf_ShowsWhatIfAsItsPrimarySpelling()
         {
-            Given("--help").WhatIf().Parse();
+            Given("--help").WhatIf().TryParse();
 
             StringAssert.Contains(this.Screen, "--whatif");
         }
@@ -740,7 +740,7 @@ namespace CShellLibTests
         [TestMethod]
         public void Parse_IsQuietAndReadableForACleanCommandLine()
         {
-            var cmd = Given("-whatif").Switch("whatif", "touch nothing").Parse();
+            var cmd = Given("-whatif").Switch("whatif", "touch nothing").TryParse();
 
             Assert.IsFalse(cmd.ShouldExit);
             Assert.AreEqual(0, cmd.ExitCode);
@@ -755,7 +755,7 @@ namespace CShellLibTests
         {
             // The guard under the ShouldExit contract: a script that forgets the check fails
             // loudly instead of running on with defaults it never earned.
-            var cmd = Given("--nope").Switch("whatif", "touch nothing").Argument("file", "the file").Parse();
+            var cmd = Given("--nope").Switch("whatif", "touch nothing").Argument("file", "the file").TryParse();
 
             Assert.IsTrue(cmd.ShouldExit);
             Assert.Throws<InvalidOperationException>(() => cmd.Switch("whatif"));
@@ -765,7 +765,7 @@ namespace CShellLibTests
         [TestMethod]
         public void Parse_TheDiagnosticsStayReadableAfterAnError()
         {
-            var cmd = Given("--nope").Switch("whatif", "touch nothing").Parse();
+            var cmd = Given("--nope").Switch("whatif", "touch nothing").TryParse();
 
             Assert.IsTrue(cmd.ShouldExit);
             Assert.AreEqual(1, cmd.ExitCode);
@@ -778,10 +778,10 @@ namespace CShellLibTests
         public void Parse_TakesAnArrayOrAList()
         {
             Assert.IsTrue(Cli.For(new List<string> { "-whatif" }).Program("demo")
-                .Switch("whatif", "touch nothing").Parse().Switch("whatif"));
+                .Switch("whatif", "touch nothing").TryParse().Switch("whatif"));
 
             Assert.IsTrue(Cli.For(new[] { "-whatif" }).Program("demo")
-                .Switch("whatif", "touch nothing").Parse().Switch("whatif"));
+                .Switch("whatif", "touch nothing").TryParse().Switch("whatif"));
         }
 
         [TestMethod]
@@ -793,7 +793,7 @@ namespace CShellLibTests
         [TestMethod]
         public void Parse_AnEmptyCommandLineIsFineWhenNothingIsRequired()
         {
-            var cmd = Given().Switch("whatif", "touch nothing").Parse();
+            var cmd = Given().Switch("whatif", "touch nothing").TryParse();
 
             Assert.IsFalse(cmd.ShouldExit);
             Assert.IsFalse(cmd.Switch("whatif"));

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -12,11 +12,11 @@ namespace CShellNet
     /// "declare" on Cli and "read" here -- so the block that reads the command line can be checked
     /// line for line against the block that declared it.
     ///
-    /// Check ShouldExit first, always:
+    /// From Cli.Parse() this is always usable, because a command line that was not understood
+    /// exited the process instead of arriving here. Read it and get on with the script.
     ///
-    ///     if (cmd.ShouldExit) return cmd.ExitCode;
-    ///
-    /// Forgetting it is caught rather than ignored. Every value below THROWS once the command line
+    /// From Cli.TryParse() it may be one that should not be used, so check ShouldExit first.
+    /// Forgetting is caught rather than ignored: every value below THROWS once the command line
     /// turned out to be bad, because the alternative -- handing back defaults for a line that was
     /// never understood -- is the silent-wrong-behaviour this type exists to prevent. The error
     /// itself has already been written to standard error by then, so what the user sees is the
@@ -77,8 +77,9 @@ namespace CShellNet
         /// True when the script should stop -- help was shown, or the command line was not valid.
         /// </summary>
         /// <remarks>
+        /// Always false from Parse(), which will have exited instead. This is for TryParse().
         /// Whatever it reports has already been printed: help to standard output, an error to
-        /// standard error. The script only has to stop.
+        /// standard error.
         /// </remarks>
         public bool ShouldExit { get; private set; }
 

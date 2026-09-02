@@ -459,20 +459,50 @@ namespace CShellNet
         }
 
         /// <summary>
-        /// Read the command line against everything declared above.
+        /// Read the command line, and stop the script if it was not valid or help was asked for.
         /// </summary>
         /// <remarks>
-        /// Never throws for a bad command line and never exits the process -- a stack trace is the
-        /// wrong way to say "you typed --dryrun", and a library that exits cannot be tested. The
-        /// message is written to standard error, help to standard output, and the script does:
+        /// What comes back is always usable, so a script goes straight on to reading it:
         ///
-        ///     if (cmd.ShouldExit) return cmd.ExitCode;
+        ///     var cmd = Cli.For(Args).Switch("whatif", "touch nothing").Parse();
+        ///     bool whatIf = cmd.Switch("whatif");
         ///
-        /// Forgetting that line is caught rather than ignored: every value on the result throws
-        /// once the command line was bad. See CliResult.
+        /// There is nothing to check, because a command line that was not understood never gets
+        /// this far. The message has already gone to standard error, or the help to standard
+        /// output, and the process has exited 1 or 0 accordingly.
+        ///
+        /// It never throws for a BAD COMMAND LINE -- a stack trace is the wrong way to say "you
+        /// typed --dryrun". It still throws for a mistake in the script itself, at the declaration
+        /// that caused it.
+        ///
+        /// Use TryParse() where exiting is not acceptable: a test, or a Cli parsed inside a
+        /// larger program that means to handle the failure itself.
         /// </remarks>
-        /// <returns>the parsed command line</returns>
+        /// <returns>the parsed command line, always readable</returns>
         public CliResult Parse()
+        {
+            var cmd = TryParse();
+
+            if (cmd.ShouldExit)
+            {
+                Environment.Exit(cmd.ExitCode);
+            }
+
+            return cmd;
+        }
+
+        /// <summary>
+        /// Read the command line without ever exiting the process.
+        /// </summary>
+        /// <remarks>
+        /// The same work as Parse(), reported rather than acted on: check ShouldExit and use
+        /// ExitCode. Everything else on the result throws until you do, so a skipped check fails
+        /// loudly instead of running on with defaults it never earned.
+        ///
+        /// This is what Parse() is built on, and what the tests use. A script wants Parse().
+        /// </remarks>
+        /// <returns>the parsed command line, which may be one that should not be used</returns>
+        public CliResult TryParse()
         {
             var values = new Dictionary<string, string>(StringComparer.Ordinal);
             var flags = new HashSet<string>(StringComparer.Ordinal);
