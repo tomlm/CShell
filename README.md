@@ -202,15 +202,6 @@ prefix -- it would make every absolute path on Linux look like a switch.
 `-help`, `-h` and `-?` work without being asked for, and the program name comes from the calling
 script's file name.
 
-**Parse() never exits the process** and never throws for a bad command line -- a stack trace is the
-wrong way to say "you typed --dryrun", and a library that exits cannot be tested. It writes the
-message to standard error, help to standard output, and sets `ShouldExit`. Forgetting to check
-that is caught rather than ignored: every value on the result throws once the command line was
-bad, so a missed check fails loudly instead of running on with defaults it never earned.
-
-The ceiling, stated so nobody has to discover it: no subcommands, no repeated options, no typed
-binding, and no separated values. A script that needs more than this can reference
-[System.CommandLine](https://www.nuget.org/packages/System.CommandLine) directly.
 
 ### Process Methods
 CShell is built using [MedallionShell](https://github.com/madelson/MedallionShell), which provides a great set of functionality for easily invoking 
