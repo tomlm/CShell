@@ -1,3 +1,7 @@
+[![Build and Test](https://github.com/tomlm/CShell/actions/workflows/BuildAndRunTests.yml/badge.svg)](https://github.com/tomlm/CShell/actions/workflows/BuildAndRunTests.yml)[![NuGet](https://img.shields.io/nuget/v/CShell.svg)](https://www.nuget.org/packages/CShell)
+
+
+
 <img src="https://github.com/tomlm/CShell/raw/master/turtle.png" width="100"/>
 
 # CShell
