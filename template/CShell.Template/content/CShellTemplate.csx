@@ -16,33 +16,16 @@ using CShellNet;
 
 var cmd = Cli.For(Args)
     .Description("..description.")
-    .Argument("file", "the file to work on")
-    .OptionalArgument("output", "where to write the result; defaults to the input name")
-    .Switch("force", "overwrite the output if it is already there")
-    .Option("format", "the output format; defaults to json")
-    .WhatIf()
-    .Example("CShellTemplate report.txt", "write report.json beside it")
+    .Option("test", "test option")
+    //.Argument("file", "the file to work on")
+    //.OptionalArgument("output", "where to write the result; defaults to the input name")
+    //.Switch("force", "overwrite the output if it is already there")
+    //.Option("format", "the output format; defaults to json")
+    //.WhatIf()
+    //.Example("CShellTemplate report.txt", "write report.json beside it")
     .Parse();
 
-var file = cmd.Argument("file");
-var format = cmd.Option("format") ?? "json";
-var output = cmd.Argument("output") ?? Path.ChangeExtension(file, format);
-
-if (cmd.WhatIf)
-{
-    print($"would write {file} to {output} as {format}");
-    return 0;
-}
-
-// Ask the user anything the command line did not settle. AskYesNo, AskText, AskSecret,
-// AskNumber, AskChoice and AskMultiChoice all read arrow keys at a terminal and a typed
-// line when input is piped.
-if (!cmd.Switch("force") && exists(output) && !AskYesNo($"{output} already exists. Overwrite?", false))
-{
-    return 1;
-}
-
-// your script goes here
-print($"writing {file} to {output} as {format}");
+if (cmd.Switch("test"))
+    print("test option is set");
 
 return 0;
