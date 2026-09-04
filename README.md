@@ -1,6 +1,6 @@
-[![Build and Test](https://github.com/tomlm/CShell/actions/workflows/BuildAndRunTests.yml/badge.svg)](https://github.com/tomlm/CShell/actions/workflows/BuildAndRunTests.yml)[![NuGet](https://img.shields.io/nuget/v/CShell.svg)](https://www.nuget.org/packages/CShell)
-
 ![turtle](https://github.com/tomlm/CShell/raw/main/turtle.png)
+
+[![Build and Test](https://github.com/tomlm/CShell/actions/workflows/BuildAndRunTests.yml/badge.svg)](https://github.com/tomlm/CShell/actions/workflows/BuildAndRunTests.yml)[![NuGet](https://img.shields.io/nuget/v/CShell.svg)](https://www.nuget.org/packages/CShell)
 
 # CShell
 CShell creates a runtime environment to make it easy to create C# based shell style scripts.
