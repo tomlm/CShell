@@ -16,8 +16,8 @@
     <RepositoryType>git</RepositoryType>
     <PackageTags>scripting dotnet csharp</PackageTags>
     <PackageId>CShell</PackageId>
-    <AssemblyVersion>3.0.1</AssemblyVersion>
-    <Version>3.0.1</Version>
+    <AssemblyVersion>3.0.2</AssemblyVersion>
+    <Version>3.0.2</Version>
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
   </PropertyGroup>
