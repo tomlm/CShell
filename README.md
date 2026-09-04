@@ -2,7 +2,7 @@
 
 
 
-<img src="https://github.com/tomlm/CShell/raw/master/turtle.png" width="100"/>
+<img src="https://github.com/tomlm/CShell/raw/main/turtle.png" width="100"/>
 
 # CShell
 CShell creates a runtime environment to make it easy to create C# based shell style scripts.
