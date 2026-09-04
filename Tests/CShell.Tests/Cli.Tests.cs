@@ -113,6 +113,436 @@ namespace CShellLibTests
             StringAssert.Contains(thrown.Message, "whatif");
         }
 
+        // ------------------------------------------------------------------ typed declarations
+
+        public enum Format { Json, Xml, Yaml }
+
+        public enum Color { Red, Green, Blue }
+
+        [Flags]
+        public enum Trace { None = 0, Reads = 1, Writes = 2 }
+
+        [TestMethod]
+        public void Typed_TheVariableNamesTheSwitch()
+        {
+            Given("--queue-length:8").Option(out int queueLength, "how many to queue").TryParse();
+
+            Assert.AreEqual(8, queueLength);
+        }
+
+        [TestMethod]
+        public void Typed_CamelCaseBecomesKebabInTheHelpAndStillMatchesEverySpelling()
+        {
+            foreach (var spelling in new[] { "--queue-length:8", "--queuelength:8", "-Queue_Length:8", "-QUEUELENGTH:8" })
+            {
+                Given(spelling).Option(out int queueLength, "how many to queue").TryParse();
+                Assert.AreEqual(8, queueLength, spelling);
+            }
+        }
+
+        [TestMethod]
+        public void Typed_TheHelpShowsTheNameTheWayItWasSpelledOut()
+        {
+            var usage = Given().Option(out int queueLength, "how many to queue").TryParse().UsageText;
+
+            StringAssert.Contains(usage, "--queue-length:<value>");
+        }
+
+        [TestMethod]
+        public void Typed_TheNameIsSplitOnTheHumpsAndRunsOfCapitalsStayTogether()
+        {
+            // expr is normally filled in by the compiler; passing it is how the shapes it can hand
+            // over get covered without a variable of each name.
+            var expected = new Dictionary<string, string>
+            {
+                { "out int queueLength", "--queue-length" },
+                { "out var apiKey",      "--api-key" },
+                { "out string APIKey",   "--api-key" },
+                { "out int maxCPU",      "--max-cpu" },
+                { "out string[] files",  "--files" },
+                { "out int? port",       "--port" },
+                { "out string file",     "--file" },
+                { "out int queue_length","--queue-length" },
+                { "out int top10",       "--top10" },
+                { "out this.retries",    "--retries" },
+                { "out config.Retries",  "--retries" },
+                { "out @out",            "--out" },
+                { "  file  ",            "--file" },
+            };
+
+            foreach (var pair in expected)
+            {
+                var usage = Given().Option(out string ignored, "where to write it", null, pair.Key).TryParse().UsageText;
+                StringAssert.Contains(usage, pair.Value + ":<value>", pair.Key);
+            }
+        }
+
+        [TestMethod]
+        public void Typed_AnExpressionWithNoNameInItThrowsAndSaysWhatToDoInstead()
+        {
+            foreach (var nameless in new[] { "out _", "out list[0]", "out (a, b)", null, "   " })
+            {
+                var thrown = Assert.Throws<ArgumentException>(
+                    () => Given().Option(out string ignored, "where to write it", null, nameless));
+
+                StringAssert.Contains(thrown.Message, "Option(name, help)");
+            }
+        }
+
+        [TestMethod]
+        public void Typed_AbsentLeavesTheDefaultAndNullableTellsThatFromZero()
+        {
+            Given().Option(out int port, "the port to listen on")
+                   .Option(out int? explicitPort, "the port to listen on").TryParse();
+
+            Assert.AreEqual(0, port);
+            Assert.IsNull(explicitPort);
+
+            Given("--explicit-port:0").Option(out int? given, "the port to listen on", "explicit-port").TryParse();
+            Assert.AreEqual(0, given.Value);
+        }
+
+        [TestMethod]
+        public void Typed_SwitchReadsIntoABool()
+        {
+            Given("--dry-run").Switch(out bool dryRun, "print, do not do").TryParse();
+            Assert.IsTrue(dryRun);
+
+            Given().Switch(out bool notGiven, "print, do not do").TryParse();
+            Assert.IsFalse(notGiven);
+        }
+
+        [TestMethod]
+        public void Typed_ArgumentsFillInDeclarationOrder()
+        {
+            Given("report.txt", "3")
+                .Argument(out string file, "the file to read")
+                .Argument(out int copies, "how many to write")
+                .TryParse();
+
+            Assert.AreEqual("report.txt", file);
+            Assert.AreEqual(3, copies);
+        }
+
+        [TestMethod]
+        public void Typed_AnOptionalArgumentLeftOutKeepsItsDefault()
+        {
+            var cmd = Given("report.txt")
+                .Argument(out string file, "the file to read")
+                .OptionalArgument(out int copies, "how many to write")
+                .TryParse();
+
+            Assert.IsFalse(cmd.ShouldExit);
+            Assert.AreEqual("report.txt", file);
+            Assert.AreEqual(0, copies);
+        }
+
+        [TestMethod]
+        public void Typed_AValueThatWillNotConvertIsAReportedErrorAndNotAnException()
+        {
+            var cmd = Given("--queue-length:soon").Option(out int queueLength, "how many to queue").TryParse();
+
+            Assert.AreEqual(0, queueLength);
+            Assert.IsTrue(cmd.ShouldExit);
+            Assert.AreEqual(1, cmd.ExitCode);
+            StringAssert.Contains(this.Errors, "--queue-length expects a whole number, but got 'soon'");
+        }
+
+        [TestMethod]
+        public void Typed_AnArgumentThatWillNotConvertNamesThePositional()
+        {
+            var cmd = Given("soon").Argument(out int queueLength, "how many to queue").TryParse();
+
+            Assert.IsTrue(cmd.ShouldExit);
+            StringAssert.Contains(this.Errors, "<queue-length> expects a whole number, but got 'soon'");
+        }
+
+        [TestMethod]
+        public void Typed_AskingForHelpWinsOverAValueThatWouldNotConvert()
+        {
+            var cmd = Given("--queue-length:soon", "--help").Option(out int queueLength, "how many to queue").TryParse();
+
+            Assert.IsTrue(cmd.HelpRequested);
+            Assert.AreEqual(0, cmd.ExitCode);
+            Assert.AreEqual(String.Empty, this.Errors);
+        }
+
+        [TestMethod]
+        public void Typed_ConvertsTheEverydayTypes()
+        {
+            Given("--count:12", "--ratio:2.5", "--when:2026-09-04", "--wait:00:05:00",
+                  "--id:8a3f9e1c-0000-0000-0000-000000000000", "--feed:https://nuget.org/v3/index.json",
+                  "--verbose:yes", "--out:C:\\temp\\My-Folder")
+                .Option(out int count, "how many to write")
+                .Option(out double ratio, "the ratio to use")
+                .Option(out DateTime when, "the date to report on")
+                .Option(out TimeSpan wait, "how long to wait")
+                .Option(out Guid id, "the id to report on")
+                .Option(out Uri feed, "the feed to use")
+                .Option(out bool verbose, "say more about it")
+                .Option(out DirectoryInfo output, "where to write it", "out")
+                .TryParse();
+
+            Assert.AreEqual(12, count);
+            Assert.AreEqual(2.5, ratio);
+            Assert.AreEqual(new DateTime(2026, 9, 4), when);
+            Assert.AreEqual(TimeSpan.FromMinutes(5), wait);
+            Assert.AreEqual(new Guid("8a3f9e1c-0000-0000-0000-000000000000"), id);
+            Assert.AreEqual("https://nuget.org/v3/index.json", feed.ToString());
+            Assert.IsTrue(verbose);
+            StringAssert.Contains(output.FullName, "My-Folder");
+        }
+
+        [TestMethod]
+        public void Typed_ANumberIsReadTheSameWayWhateverTheMachineCallsADecimalPoint()
+        {
+            var was = System.Globalization.CultureInfo.CurrentCulture;
+            try
+            {
+                System.Globalization.CultureInfo.CurrentCulture = new System.Globalization.CultureInfo("de-DE");
+                Given("--ratio:2.5").Option(out double ratio, "the ratio to use").TryParse();
+                Assert.AreEqual(2.5, ratio);
+            }
+            finally
+            {
+                System.Globalization.CultureInfo.CurrentCulture = was;
+            }
+        }
+
+        [TestMethod]
+        public void Typed_AnEnumIsMatchedWithoutRegardToCase()
+        {
+            foreach (var spelling in new[] { "--format:yaml", "--format:YAML", "--format:Yaml" })
+            {
+                Given(spelling).Option(out Format format, "the output format").TryParse();
+                Assert.AreEqual(Format.Yaml, format, spelling);
+            }
+        }
+
+        [TestMethod]
+        public void Typed_AnEnumThatNamesNoMemberListsTheOnesItHas()
+        {
+            var cmd = Given("--format:toml").Option(out Format format, "the output format").TryParse();
+
+            Assert.IsTrue(cmd.ShouldExit);
+            Assert.AreEqual(Format.Json, format);
+            StringAssert.Contains(this.Errors, "one of: Json, Xml, Yaml");
+        }
+
+        [TestMethod]
+        public void Typed_ANumberThatNamesNoEnumMemberIsRefusedUnlessItIsFlags()
+        {
+            var cmd = Given("--format:7").Option(out Format format, "the output format").TryParse();
+            Assert.IsTrue(cmd.ShouldExit);
+            Assert.AreEqual(Format.Json, format);
+
+            foreach (var spelling in new[] { "--trace:Reads,Writes", "--trace:reads,writes", "--trace:READS,WRITES" })
+            {
+                Given(spelling).Option(out Trace trace, "what to write to the log").TryParse();
+                Assert.AreEqual(Trace.Reads | Trace.Writes, trace, spelling);
+            }
+        }
+
+        [TestMethod]
+        public void Typed_AnEnumOptionReadsBackTheMemberThatWasNamed()
+        {
+            foreach (var pair in new Dictionary<string, Color>
+                     {
+                         { "--color:Red", Color.Red },
+                         { "--color:Green", Color.Green },
+                         { "--color:Blue", Color.Blue },
+                     })
+            {
+                Given(pair.Key).Option(out Color color, "the colour to draw in").TryParse();
+                Assert.AreEqual(pair.Value, color, pair.Key);
+            }
+        }
+
+        [TestMethod]
+        public void Typed_AnEnumArgumentReadsBackTheMemberThatWasNamed()
+        {
+            foreach (var pair in new Dictionary<string, Color>
+                     {
+                         { "Red", Color.Red },
+                         { "Green", Color.Green },
+                         { "Blue", Color.Blue },
+                     })
+            {
+                Given(pair.Key).Argument(out Color color, "the colour to draw in").TryParse();
+                Assert.AreEqual(pair.Value, color, pair.Key);
+            }
+        }
+
+        [TestMethod]
+        public void Typed_AnEnumArgumentIgnoresCaseTheWayAnOptionDoes()
+        {
+            foreach (var spelling in new[] { "green", "GREEN", "Green", "gReEn" })
+            {
+                Given(spelling).Argument(out Color color, "the colour to draw in").TryParse();
+                Assert.AreEqual(Color.Green, color, spelling);
+            }
+        }
+
+        [TestMethod]
+        public void Typed_AnEnumArgumentThatNamesNoMemberListsTheOnesItHas()
+        {
+            var cmd = Given("mauve").Argument(out Color color, "the colour to draw in").TryParse();
+
+            Assert.IsTrue(cmd.ShouldExit);
+            Assert.AreEqual(1, cmd.ExitCode);
+            Assert.AreEqual(Color.Red, color);
+            StringAssert.Contains(this.Errors, "<color> expects one of: Red, Green, Blue, but got 'mauve'");
+        }
+
+        [TestMethod]
+        public void Typed_AnEnumOptionThatNamesNoMemberNamesTheSwitchInTheError()
+        {
+            var cmd = Given("--color:mauve").Option(out Color color, "the colour to draw in").TryParse();
+
+            Assert.IsTrue(cmd.ShouldExit);
+            StringAssert.Contains(this.Errors, "--color expects one of: Red, Green, Blue, but got 'mauve'");
+        }
+
+        [TestMethod]
+        public void Typed_AnEnumTakesTheNumberOfAMemberButNotJustAnyNumber()
+        {
+            Given("2").Argument(out Color color, "the colour to draw in").TryParse();
+            Assert.AreEqual(Color.Blue, color);
+
+            var cmd = Given("9").Argument(out Color tooHigh, "the colour to draw in").TryParse();
+            Assert.IsTrue(cmd.ShouldExit);
+            Assert.AreEqual(Color.Red, tooHigh);
+        }
+
+        [TestMethod]
+        public void Typed_AnEnumLeftOutIsItsZeroMemberUnlessItIsNullable()
+        {
+            // The trap worth knowing about: default(Color) is Red, so "not given" and "-color:Red"
+            // are the same value. Color? is how a script tells them apart.
+            var cmd = Given().OptionalArgument(out Color color, "the colour to draw in").TryParse();
+            Assert.IsFalse(cmd.ShouldExit);
+            Assert.AreEqual(Color.Red, color);
+
+            Given().Option(out Color? chosen, "the colour to draw in").TryParse();
+            Assert.IsNull(chosen);
+
+            Given("--chosen:Blue").Option(out Color? given, "the colour to draw in", "chosen").TryParse();
+            Assert.AreEqual(Color.Blue, given.Value);
+        }
+
+        [TestMethod]
+        public void Typed_AnEnumIsDeclaredInTheHelpLikeAnyOtherValue()
+        {
+            var usage = Given()
+                .Argument(out Color color, "the colour to draw in")
+                .Option(out Color background, "the colour behind it")
+                .TryParse().UsageText;
+
+            StringAssert.Contains(usage, "<color>");
+            StringAssert.Contains(usage, "--background:<value>");
+            StringAssert.Contains(usage, "the colour to draw in");
+        }
+
+        [TestMethod]
+        public void Typed_AliasesAreTheThirdArgument()
+        {
+            foreach (var spelling in new[] { "--queue-length:8", "-q:8", "--depth:8" })
+            {
+                Given(spelling).Option(out int queueLength, "how many to queue", "q|depth").TryParse();
+                Assert.AreEqual(8, queueLength, spelling);
+            }
+        }
+
+        [TestMethod]
+        public void Typed_WhatIfReadsIntoABoolAndKeepsItsConventionalSpelling()
+        {
+            foreach (var spelling in new[] { "-whatif", "--dry-run", "-n" })
+            {
+                var cmd = Given(spelling).WhatIf(out bool rehearsing).TryParse();
+                Assert.IsTrue(rehearsing, spelling);
+                Assert.IsTrue(cmd.WhatIf, spelling);
+            }
+        }
+
+        [TestMethod]
+        public void Typed_UndeclaredSwitchesAreStillAnError()
+        {
+            var cmd = Given("--queue-length:8", "--nope").Option(out int queueLength, "how many to queue").TryParse();
+
+            Assert.IsTrue(cmd.ShouldExit);
+            StringAssert.Contains(this.Errors, "unknown switch");
+        }
+
+        [TestMethod]
+        public void Typed_ASeparatedValueIsStillRefused()
+        {
+            var cmd = Given("--queue-length", "8").Option(out int queueLength, "how many to queue").TryParse();
+
+            Assert.IsTrue(cmd.ShouldExit);
+            Assert.AreEqual(0, queueLength);
+            StringAssert.Contains(this.Errors, "needs a value, attached");
+        }
+
+        [TestMethod]
+        public void Typed_TheValuesAreAlsoReadableFromTheResult()
+        {
+            var cmd = Given("--queue-length:8").Option(out int queueLength, "how many to queue").TryParse();
+
+            Assert.AreEqual(8, queueLength);
+            Assert.AreEqual("8", cmd.Option("queue-length"));
+        }
+
+        [TestMethod]
+        public void Typed_CollidingWithSomethingAlreadyDeclaredStillThrows()
+        {
+            Assert.Throws<InvalidOperationException>(
+                () => Given().Option("queuelength", "how many to queue").Option(out int queueLength, "how many to queue"));
+        }
+
+        [TestMethod]
+        public void Typed_ATypeThatCannotBeMadeFromAStringThrowsAtTheDeclaration()
+        {
+            // Even with nothing on the command line, so it is found on the first run rather than
+            // the first time somebody passes that switch.
+            var thrown = Assert.Throws<NotSupportedException>(
+                () => Given().Option(out int[] counts, "how many of each to write"));
+
+            StringAssert.Contains(thrown.Message, "cannot be made from a string");
+        }
+
+        [TestMethod]
+        public void Typed_ARestAfterATypedDeclarationThrowsRatherThanReadingItTwoWays()
+        {
+            var thrown = Assert.Throws<InvalidOperationException>(
+                () => Given().Option(out int queueLength, "how many to queue").Rest("args", "what to pass on"));
+
+            StringAssert.Contains(thrown.Message, "Rest()");
+        }
+
+        [TestMethod]
+        public void Typed_ATypedOptionAfterARestReadsThePassThroughRulesCorrectly()
+        {
+            // Everything from the first positional on belongs to the wrapped program, --nope
+            // included, so the typed option only sees what came before it.
+            var cmd = Given("--timeout:30", "cmd.exe", "/k", "--nope")
+                .Rest("args", "what to pass on")
+                .Option(out int timeout, "seconds to wait for it")
+                .TryParse();
+
+            Assert.IsFalse(cmd.ShouldExit);
+            Assert.AreEqual(30, timeout);
+            CollectionAssert.AreEqual(new[] { "cmd.exe", "/k", "--nope" }, cmd.Rest.ToArray());
+        }
+
+        [TestMethod]
+        public void Typed_NamesAreTakenOffTheVariableEvenWhenItWasDeclaredEarlier()
+        {
+            int queueLength;
+            Given("--queue-length:8").Option(out queueLength, "how many to queue").TryParse();
+
+            Assert.AreEqual(8, queueLength);
+        }
+
         // ------------------------------------------------------------------ declaration mistakes
 
         [TestMethod]

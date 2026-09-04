@@ -126,32 +126,59 @@ var extra = AskMultiChoice("Choose your toppings:", toppings);
 
 See **askdemo.csx** for a guided tour that shows each call and then runs it.
 
-### Command line
-**Cli** declares what a script accepts and reads the command line against it. An **Argument** is a
-positional, a **Switch** is on or off, an **Option** carries a value. The same three words read
-the values back.
+### Cli Command processor
+**Cli** declares what a script accepts and reads the command line against it. 
+* An **Argument** is a positional value ("foo.txt")
+* a **Switch** is on or off ("--verbose")
+* an **Option** is a named value ("--output=foo.txt")
+
+Declare each one into a variable and there is nothing else to write -- the variable's name is the
+value's name, and its type is what the value is converted to:
 
 ```CSharp
-var cmd = Cli.For(Args)
-    .Description("Opens a repository in GitHub Desktop.")
-    .OptionalArgument("path", "the repository to open; defaults to the current directory")
-    .WhatIf()
-    .Option("source", "the feed to use; defaults to nuget.org")
-    .Parse();
+Cli.For(Args)
+   .Description("Opens a repository in GitHub Desktop.")
+   .OptionalArgument(out string path, "the repository to open; defaults to the current directory")
+   .Option(out int queueLength, "how many to queue at once")
+   .Switch(out bool force, "open it even if it is already open", "f")
+   .WhatIf(out bool whatIf)
+   .Parse();
 
-var path   = cmd.Argument("path") ?? Directory.GetCurrentDirectory();
-var source = cmd.Option("source") ?? "https://api.nuget.org/v3/index.json";
-var whatIf = cmd.WhatIf;
+if (queueLength > 3)
+    ...
 ```
 
-| Declare on Cli   | Description                                                                                      |
+| Declare into a variable | Description |
 |------------------|--------------------------------------------------------------------------------------------------|
-| **Argument(name, help)** | a required positional, filled in declaration order |
-| **OptionalArgument(name, help)** | a positional that may be left out; reads back null |
-| **Rest(name, help)** | a tail collecting everything left, verbatim |
-| **Switch(name, help)** | a switch that is on or off; aliases go in the name after a pipe: `"whatif\|n"` |
-| **Option(name, help)** | a switch carrying a value, written attached: `-out:file` |
-| **WhatIf()** | declares the conventional dry run: `-whatif`, also `--dry-run` or `-n` |
+| **Argument(out T value, help)** | a required positional; `out string file` is `<file>` |
+| **OptionalArgument(out T value, help)** | a positional that may be left out; keeps `default(T)` |
+| **Switch(out bool value, help, aliases)** | a switch that is on or off; `out bool dryRun` is `--dry-run` |
+| **Option(out T value, help, aliases)** | a switch carrying a value: `--queue-length:8` |
+| **WhatIf(out bool value)** | the conventional dry run: `-whatif`, `--dry-run` or `-n` |
+
+* Aliases are the third argument, because there is no name string to put them in:
+  `.Switch(out bool force, "overwrite it", "f")`.
+
+An `enum` gives a script a fixed set of answers, and the error that lists them is generated from
+the type. It reads the same on a positional as on an option:
+
+```CSharp
+enum Color { Red, Green, Blue }
+
+Cli.For(Args)
+   .Argument(out Color color, "the colour to draw in")
+   .Option(out Color? background, "the colour behind it; defaults to the terminal's")
+   .Parse();
+```
+
+| Cli Method  | Description                                                                                      |
+|------------------|--------------------------------------------------------------------------------------------------|
+| **Argument(out value, help)** | a required positional, filled in declaration order |
+| **OptionalArgument(out value, help)** | a positional that may be left out; reads back null |
+| **Switch(out value, help, aliases)** | a switch that is on or off; aliases go in the name after a pipe: `"whatif\|n"` |
+| **Option(out value, help)** | a switch carrying a value, written attached: `-out:file` |
+| **WhatIf(out value)** | declares the conventional dry run: `-whatif`, also `--dry-run` or `-n` |
+| **Rest(out value, help)** | a tail collecting everything left, verbatim |
 | **Description(text)** | the paragraph shown above the usage line |
 | **Example(commandLine, help)** | a worked example for the bottom of the help |
 | **Program(name)** | override the name in the usage line |
@@ -159,30 +186,9 @@ var whatIf = cmd.WhatIf;
 | **Parse()** | read the command line; prints and exits if it was not valid or help was asked for |
 | **TryParse()** | the same, reported through ShouldExit rather than acted on |
 
-| Read on CliResult | Description                                                                                     |
-|------------------|--------------------------------------------------------------------------------------------------|
-| **Argument(name)** | what was given for a positional, or null when an optional one was omitted |
-| **Switch(name)** | whether a switch was given |
-| **Option(name)** | the value given for an option, or null |
-| **WhatIf**       | whether the dry-run switch was given |
-| **Rest**         | everything the declared Rest collected |
-| **Arguments**    | every positional given, in order |
-| **Error**        | what was wrong with the command line, or null |
-| **UsageText**    | the generated help, whether or not it was shown |
-| **ProgramName**  | the name shown in the usage line |
-| **ShouldExit**   | *(TryParse only)* true when the script should stop |
-| **ExitCode**     | *(TryParse only)* 0 for help, 1 for a command line that was not valid |
+Parse and TryParse return a **CliResult** object that gives access to the values.
 
-* Anything undeclared is an error. Bare words are positionals, not unknown switches.
-* Values attach: `-out:file` or `-out=file`, never `-out file`. Only the name is normalized, so
-  `-source:https://api.nuget.org/v3/index.json` arrives intact.
-* `-whatif`, `--whatif` and `--what-if` are one switch -- dashes come off, inner hyphens and
-  underscores go, case is ignored. `/` is not a prefix.
-* `-help`, `-h` and `-?` work without being declared, and the help is generated from the
-  declarations. The program name comes from the calling script's file name.
-* `Parse()` exits on a bad command line, so what it returns is always usable. `TryParse()` reports
-  through `ShouldExit`/`ExitCode` instead, and every other value on it throws until you check.
-* No subcommands, repeated options, typed binding, or separated values. For more complex cli support use something like [System.CommandLine](https://www.nuget.org/packages/System.CommandLine) directly.
+* No subcommands, repeated options, or separated values. For more complex cli support use something like [System.CommandLine](https://www.nuget.org/packages/System.CommandLine) directly.
 
 ### Process Methods
 CShell is built using [MedallionShell](https://github.com/madelson/MedallionShell), which provides a great set of functionality for easily invoking 
@@ -367,6 +373,7 @@ chmod +x example.csx
 ## CHANGELOG
 ### v3.0.0
 * Added **Cli**, a declarative command line parser with generated --help
+* **Cli** binds straight into typed variables: `.Option(out int queueLength, "how many to queue")` declares `--queue-length` and converts it
   * Argument()/OptionalArgument()/Rest() for positionals, Switch() for booleans, Option() for attached values
   * anything undeclared is an error; Parse() exits on a bad command line, TryParse() reports instead
 * Added the **Ask** methods: AskText, AskSecret, AskYesNo, AskNumber, AskChoice, AskMultiChoice
