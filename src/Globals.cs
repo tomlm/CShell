@@ -1,4 +1,5 @@
 ﻿using Medallion.Shell;
+using System.Threading.Tasks;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -83,7 +84,61 @@ namespace CShellNet
             => _shell.Run(options, executable, arguments);
 
         /// <summary>
-        /// Start a process detached 
+        /// Run a process attached to this console and wait for it, returning its exit code.
+        /// </summary>
+        /// <remarks>
+        /// This is what a shell does by default. In bash, `ssh host` or `vim` takes over the
+        /// terminal, and you opt into capture with $(...). Run() is the other way round -- it
+        /// always captures -- so Exec() is the one to reach for whenever the program needs the
+        /// terminal rather than a pipe:
+        ///
+        ///     var exitCode = Exec("ssh", "user@host");
+        ///     Exec("gh", "auth", "login");
+        ///     Exec("git", "rebase", "-i", "HEAD~3");
+        ///
+        /// Nothing is redirected, so the program owns stdin, stdout and stderr. That is what lets a
+        /// full screen UI draw, arrow keys work, Ctrl+C reach the program rather than this one, and
+        /// the window size follow the terminal. It is also why there is no output to return: use
+        /// Run() when you want to read what it printed, and Exec() when the user needs to see and
+        /// answer it.
+        /// </remarks>
+        /// <param name="executable">program to run</param>
+        /// <param name="arguments">arguments to pass to it</param>
+        /// <returns>the process's exit code</returns>
+        public static int Exec(string executable, params Object[] arguments)
+            => _shell.Exec(executable, arguments);
+
+        /// <summary>
+        /// Run a process attached to this console and wait for it, returning its exit code.
+        /// </summary>
+        /// <param name="options">options function</param>
+        /// <param name="executable">program to run</param>
+        /// <param name="arguments">arguments to pass to it</param>
+        /// <returns>the process's exit code</returns>
+        public static int Exec(Action<ExecOptions> options, string executable, params Object[] arguments)
+            => _shell.Exec(options, executable, arguments);
+
+        /// <summary>
+        /// Run a process attached to this console, returning its exit code when it finishes.
+        /// </summary>
+        /// <param name="executable">program to run</param>
+        /// <param name="arguments">arguments to pass to it</param>
+        /// <returns>the process's exit code</returns>
+        public static Task<int> ExecAsync(string executable, params Object[] arguments)
+            => _shell.ExecAsync(executable, arguments);
+
+        /// <summary>
+        /// Run a process attached to this console, returning its exit code when it finishes.
+        /// </summary>
+        /// <param name="options">options function</param>
+        /// <param name="executable">program to run</param>
+        /// <param name="arguments">arguments to pass to it</param>
+        /// <returns>the process's exit code</returns>
+        public static Task<int> ExecAsync(Action<ExecOptions> options, string executable, params Object[] arguments)
+            => _shell.ExecAsync(options, executable, arguments);
+
+        /// <summary>
+        /// Start a process detached
         /// </summary>
         /// <param name="executable"></param>
         /// <param name="arguments"></param>

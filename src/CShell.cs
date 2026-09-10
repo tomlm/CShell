@@ -4,6 +4,9 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Threading.Tasks;
+using System.Threading;
+using System.Diagnostics;
 
 namespace CShellNet
 {
@@ -155,7 +158,140 @@ namespace CShellNet
         }
 
         /// <summary>
-        /// Start a process detached 
+        /// Run a process attached to this console and wait for it, returning its exit code.
+        /// </summary>
+        /// <remarks>
+        /// This is what a shell does by default. In bash, `ssh host` or `vim` takes over the
+        /// terminal, and you opt into capture with $(...). Run() is the other way round -- it
+        /// always captures -- so Exec() is the one to reach for whenever the program needs the
+        /// terminal rather than a pipe:
+        ///
+        ///     var exitCode = Exec("ssh", "user@host");
+        ///     Exec("gh", "auth", "login");
+        ///     Exec("git", "rebase", "-i", "HEAD~3");
+        ///
+        /// Nothing is redirected, so the program owns stdin, stdout and stderr. That is what lets a
+        /// full screen UI draw, arrow keys work, Ctrl+C reach the program rather than this one, and
+        /// the window size follow the terminal. It is also why there is no output to return: use
+        /// Run() when you want to read what it printed, and Exec() when the user needs to see and
+        /// answer it.
+        ///
+        /// The terminal's settings are put back afterwards, so a program killed before it can tidy
+        /// up does not leave the console with echo turned off.
+        /// </remarks>
+        /// <param name="executable">program to run</param>
+        /// <param name="arguments">arguments to pass to it</param>
+        /// <returns>the process's exit code</returns>
+        public int Exec(string executable, params Object[] arguments)
+        {
+            return ExecAsync((opt) => { }, executable, arguments).GetAwaiter().GetResult();
+        }
+
+        /// <summary>
+        /// Run a process attached to this console and wait for it, returning its exit code.
+        /// </summary>
+        /// <param name="options">options function</param>
+        /// <param name="executable">program to run</param>
+        /// <param name="arguments">arguments to pass to it</param>
+        /// <returns>the process's exit code</returns>
+        public int Exec(Action<ExecOptions> options, string executable, params Object[] arguments)
+        {
+            return ExecAsync(options, executable, arguments).GetAwaiter().GetResult();
+        }
+
+        /// <summary>
+        /// Run a process attached to this console, returning its exit code when it finishes.
+        /// </summary>
+        /// <param name="executable">program to run</param>
+        /// <param name="arguments">arguments to pass to it</param>
+        /// <returns>the process's exit code</returns>
+        public Task<int> ExecAsync(string executable, params Object[] arguments)
+        {
+            return ExecAsync((opt) => { }, executable, arguments);
+        }
+
+        /// <summary>
+        /// Run a process attached to this console, returning its exit code when it finishes.
+        /// </summary>
+        /// <param name="options">options function</param>
+        /// <param name="executable">program to run</param>
+        /// <param name="arguments">arguments to pass to it</param>
+        /// <returns>the process's exit code</returns>
+        public async Task<int> ExecAsync(Action<ExecOptions> options, string executable, params Object[] arguments)
+        {
+            if (this.Echo)
+            {
+                Console.WriteLine($"{executable} {String.Join(" ", arguments)}");
+            }
+
+            var execOptions = new ExecOptions();
+            options?.Invoke(execOptions);
+
+            var startInfo = new ProcessStartInfo(executable)
+            {
+                // Not UseShellExecute: that would launch a separate window instead of using this one.
+                UseShellExecute = false,
+
+                // The whole point. Inheriting the console is what a pipe cannot give you.
+                RedirectStandardInput = false,
+                RedirectStandardOutput = false,
+                RedirectStandardError = false,
+
+                WorkingDirectory = execOptions.workingDirectory ?? this.CurrentFolder.FullName,
+            };
+
+            foreach (var argument in arguments)
+            {
+                startInfo.ArgumentList.Add(argument?.ToString() ?? String.Empty);
+            }
+
+            foreach (var variable in execOptions.environment)
+            {
+                startInfo.Environment[variable.Key] = variable.Value;
+            }
+
+            execOptions.startInfo?.Invoke(startInfo);
+
+            using (var consoleState = ConsoleState.Capture())
+            using (var process = Process.Start(startInfo))
+            {
+                if (process == null)
+                {
+                    throw new InvalidOperationException($"Unable to start '{executable}'.");
+                }
+
+                try
+                {
+                    await process.WaitForExitAsync(execOptions.cancellationToken).ConfigureAwait(false);
+                }
+                catch (OperationCanceledException)
+                {
+                    TryKill(process);
+                    throw;
+                }
+
+                return process.ExitCode;
+            }
+        }
+
+        private static void TryKill(Process process)
+        {
+            try
+            {
+                if (!process.HasExited)
+                {
+                    process.Kill(entireProcessTree: true);
+                }
+            }
+            catch
+            {
+                // It exited between the check and the kill, or we are not allowed to. Either way
+                // the cancellation is what the caller cares about.
+            }
+        }
+
+        /// <summary>
+        /// Start a process detached
         /// </summary>
         /// <param name="executable"></param>
         /// <param name="arguments"></param>
