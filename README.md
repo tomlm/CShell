@@ -176,17 +176,79 @@ Cli.For(Args)
 | **Switch(out value, help, aliases)** | a switch that is on or off; aliases go in the name after a pipe: `"whatif\|n"` |
 | **Option(out value, help)** | a switch carrying a value, written attached: `-out:file` |
 | **WhatIf(out value)** | declares the conventional dry run: `-whatif`, also `--dry-run` or `-n` |
-| **Rest(out value, help)** | a tail collecting everything left, verbatim |
+| **Rest(name, help)** | a tail collecting everything left, verbatim |
 | **Description(text)** | the paragraph shown above the usage line |
 | **Example(commandLine, help)** | a worked example for the bottom of the help |
+| **Command(name, help, declare)** | a verb with a command line of its own; nests to any depth |
+| **Run(handler)** / **RunAsync(handler)** | what a command does when it is the one that was typed |
 | **Program(name)** | override the name in the usage line |
 | **UsageWhenEmpty()** | print the usage when run with no arguments at all |
 | **Parse()** | read the command line; prints and exits if it was not valid or help was asked for |
-| **TryParse()** | the same, reported through ShouldExit rather than acted on |
+| **ParseAsync()** | the same, awaiting a command that declared RunAsync() |
+| **TryParse()** / **TryParseAsync()** | the same, reported through ShouldExit rather than acted on |
 
 Parse and TryParse return a **CliResult** object that gives access to the values.
 
-* No subcommands, repeated options, or separated values. For more complex cli support use something like [System.CommandLine](https://www.nuget.org/packages/System.CommandLine) directly.
+#### Commands
+
+A script with verbs declares a **Command** for each, and each one declares its own line the same
+three ways. Commands nest, so `svc nuget push` reads the way `dotnet nuget push` does:
+
+```CSharp
+await Cli.For(Args)
+    .Description("Manages the service.")
+    .Command("start", "start the service", c =>
+    {
+        c.Argument(out string file, "the file to start");
+        c.Switch(out bool force, "start it even if one is already running");
+        c.Run(() => Start(file, force));
+    })
+    .Command("nuget", "work with the feed", c => c
+        .Command("push", "push a package", p =>
+        {
+            p.Argument(out string package, "the .nupkg to push");
+            p.RunAsync(async () => await Push(package));
+        }))
+    .Switch(out bool verbose, "say what is happening")
+    .ParseAsync();
+```
+
+Every level has its own generated help (`svc --help`, `svc nuget push --help`), its own
+unknown-switch error, and its own name in the message -- `svc nuget push: missing <package>.`
+Only the command that was actually typed is ever built, so nothing binds for a command nobody
+asked for.
+
+A script that would rather switch on the verb itself declares the values with the (name, help)
+overloads and reads them back:
+
+```CSharp
+var cmd = Cli.For(Args)
+    .Command("start", "start it", c => c.Argument("file", "the file").Switch("force", "start anyway"))
+    .Command("stop", "stop it", c => c.Option("timeout", "seconds to wait"))
+    .Parse();
+
+if (cmd.Command == "start")
+    Start(cmd.Argument("file"), cmd.Switch("force"));
+```
+
+* **Run(handler)** is the only way to use a command's *typed* variables -- an `out` variable
+  belongs to the block it was declared in, so it cannot be read after the lambda returns.
+* What a handler returns lands on **CliResult.ExitCode**, and Parse() returns rather than exiting:
+  `return Cli.For(Args)....Parse().ExitCode;`. `ShouldExit` still tells a handler's code apart
+  from a command line that could not be read.
+* **RunAsync()** is a separate name rather than a Run() overload, because `Run(async () => ...)`
+  would bind to the void one as an async void that nobody awaits. It needs **ParseAsync()**;
+  Parse() throws and says so.
+* Switches at a level with commands are **global** -- typed before the command word,
+  `svc --verbose start foo` -- and stay readable from the command's own result. A typed global
+  must be declared *after* the first Command(), because a typed declaration reads its value as it
+  runs and before then the parser does not know that the line splits. One typed after the command
+  word is refused with the fix: *'--verbose' is a global switch -- write it before the command.*
+* A level with commands cannot also have positionals: the first bare word is the command.
+* `cmd.Command` is the verb that was typed, `cmd.CommandPath` is the whole chain, and
+  `cmd.Parent` is the level above.
+
+* No repeated options or separated values. For more complex cli support use something like [System.CommandLine](https://www.nuget.org/packages/System.CommandLine) directly.
 
 ### Process Methods
 CShell is built using [MedallionShell](https://github.com/madelson/MedallionShell), which provides a great set of functionality for easily invoking 
@@ -197,10 +259,43 @@ to make it even easier to work with the output of processes.
 |------------------|--------------------------------------------------------------------------------------------------|
 | **ReadFile()/cat()/type()**  | read a file and create a stream                                                        |
 | **echo(text/lines/stream)** | echo text,lines from memory to a stream                                                 |
-| **Run(program, arg1, ..., argN)**    | run a program directly with the given args (aka Process.Start(program, args) |
+| **Run(program, arg1, ..., argN)**    | run a program and CAPTURE its output, for reading and piping |
+| **Exec()/ExecAsync(program, arg1, ..., argN)** | run a program ATTACHED to this console, returning its exit code |
 | **Start(program, arg1, ..., argN)**    | run a DETACHED program directly with the given args (aka Process.Start(program, args)|
 | **Cmd(cmd)**  | run the cmd inside a cmd.exe, allow you to execute shell commands (like dir /b *.*                  |
 | **Bash(bash)**  | run the program in bash environment, allow you to execute bash shell commands (like ls -al *      |
+
+Three ways to run something, and the difference is where its input and output go:
+
+| | Output | Use it for |
+|---|---|---|
+| **Run()**  | captured | anything you want to read, pipe, or parse |
+| **Exec()** | your console | anything the user has to see and answer |
+| **Start()**| its own window | anything you are not waiting for |
+
+`Exec()` is what a shell does by default. In bash, `ssh host` or `vim` takes over the terminal and
+you opt into capture with `$(...)`; `Run()` is the other way round, so anything that needs the
+terminal rather than a pipe wants `Exec()`:
+
+```CSharp
+var exitCode = Exec("ssh", "user@host");
+Exec("gh", "auth", "login");
+Exec("git", "rebase", "-i", "HEAD~3");
+
+await ExecAsync(opt => opt.WorkingDirectory(repo)
+                          .EnvironmentVariable("EDITOR", "code --wait"),
+                "git", "commit");
+```
+
+Nothing is redirected, so the program owns stdin, stdout and stderr. That is what lets a full screen
+UI draw, arrow keys work, Ctrl+C reach the program rather than your script, and the window size
+follow the terminal - none of which survive a pipe. It is also why there is no output to return:
+reach for `Run()` when you want to read what a program printed, and `Exec()` when the user needs to
+see and answer it. Passing a program that stops to ask a question to `Run()` hangs it forever on a
+stdin pipe nothing will write to.
+
+Terminal settings are restored afterwards, so a program killed before it can tidy up does not leave
+your console with echo switched off.
 
 ```CSharp
 // Invoke multiple commands using fluent style
@@ -369,6 +464,13 @@ chmod +x example.csx
 ```
 
 ## CHANGELOG
+### v3.1.0
+* **Cli** now models nested commands, the way `dotnet build` and `dotnet nuget push` do
+  * `.Command(name, help, c => ...)` gives a verb a command line of its own, and commands nest to any depth
+  * `.Run(...)` / `.RunAsync(...)` declare what a command does; `ParseAsync()` awaits an async one
+  * every level has its own generated help and its own name in its errors; only the command that was typed is built
+  * switches at a command level are globals, readable from the command's result; `CliResult` gains Command, CommandPath, Parent and HandlerRan
+
 ### v3.0.0
 * Added **Cli**, a declarative command line parser with generated --help
 * **Cli** binds straight into typed variables: `.Option(out int queueLength, "how many to queue")` declares `--queue-length` and converts it
