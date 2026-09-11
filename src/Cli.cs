@@ -6,6 +6,7 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace CShellNet
 {
@@ -52,19 +53,45 @@ namespace CShellNet
     /// Help is generated from the declarations, so it cannot drift from what the script accepts,
     /// and `-help`, `-h` and `-?` are always understood without asking.
     ///
-    /// The ceiling, stated so nobody has to discover it: no subcommands, no repeated options, and
-    /// values ATTACH (`-out:file`, never `-out file` -- see Option). A script that needs more than
-    /// this should reference System.CommandLine directly rather than growing this into a
-    /// half-framework.
+    /// A script with VERBS declares a Command for each, and each one declares its own line the
+    /// same three ways. Commands nest, so `svc nuget push` reads the way `dotnet nuget push` does:
+    ///
+    ///     await Cli.For(Args)
+    ///         .Command("start", "start the service", c =&gt;
+    ///         {
+    ///             c.Argument(out string file, "the file to start");
+    ///             c.Run(() =&gt; Start(file));
+    ///         })
+    ///         .Command("nuget", "work with the feed", c =&gt; c
+    ///             .Command("push", "push a package", p =&gt;
+    ///             {
+    ///                 p.Argument(out string package, "the .nupkg to push");
+    ///                 p.RunAsync(async () =&gt; await Push(package));
+    ///             }))
+    ///         .ParseAsync();
+    ///
+    /// Every level has its own generated help, its own unknown-switch error, and its own name in
+    /// the message -- `svc nuget push: missing &lt;package&gt;.` -- and only the command that was typed
+    /// is ever built. See Command().
+    ///
+    /// The ceiling, stated so nobody has to discover it: no repeated options, and values ATTACH
+    /// (`-out:file`, never `-out file` -- see Option). A script that needs more than this should
+    /// reference System.CommandLine directly rather than growing this into a half-framework.
     /// </remarks>
     public class Cli
     {
         private readonly List<string> tokens;
         private readonly List<SwitchSpec> switches = new List<SwitchSpec>();
         private readonly List<ArgSpec> arguments = new List<ArgSpec>();
+        private readonly List<CommandSpec> commands = new List<CommandSpec>();
         private readonly List<KeyValuePair<string, string>> examples = new List<KeyValuePair<string, string>>();
 
         private readonly List<string> conversionErrors = new List<string>();
+
+        // The level above, and the name that got here from it. Null at the top, which is how
+        // Program(), Run() and the "write it before the command" advice all tell where they are.
+        private readonly Cli parent;
+        private readonly string commandName;
 
         private string program;
         private string description;
@@ -72,10 +99,19 @@ namespace CShellNet
         private bool whatIfDeclared;
         private bool typedDeclared;
 
-        private Cli(List<string> tokens, string program)
+        private Func<int> handler;
+        private Func<Task<int>> asyncHandler;
+
+        // What the level above parsed, kept so this level's result can chain back to it and a
+        // global declared at the top stays readable from the leaf.
+        private CliResult parentResult;
+
+        private Cli(List<string> tokens, string program, Cli parent, string commandName)
         {
             this.tokens = tokens;
             this.program = program;
+            this.parent = parent;
+            this.commandName = commandName;
 
             // Help always exists. No script is better off without it when it is generated free,
             // and a script wanting different wording just declares its own, which replaces this.
@@ -111,7 +147,7 @@ namespace CShellNet
                 throw new ArgumentNullException(nameof(args), "Cli.For() needs the command line, not null.");
             }
 
-            return new Cli(args.ToList(), ProgramFrom(scriptPath));
+            return new Cli(args.ToList(), ProgramFrom(scriptPath), null, null);
         }
 
         static string ProgramFrom(string scriptPath)
@@ -156,6 +192,16 @@ namespace CShellNet
         /// <returns>the builder, to go on declaring</returns>
         public Cli Program(string name)
         {
+            // A command is already named -- by Command() -- and its name is the whole path that
+            // got to it, which is what every message at that level is printed under. Letting
+            // Program() overwrite that would quietly break the trail back to what to type.
+            if (this.parent != null)
+            {
+                throw new InvalidOperationException(
+                    $"Program(\"{name}\") cannot be called inside a command -- a command is named by Command(), " +
+                    $"and this one is already '{this.program}'. Program() names the whole program, at the top.");
+            }
+
             if (String.IsNullOrWhiteSpace(name))
             {
                 throw new ArgumentException("Program() needs a name.", nameof(name));
@@ -255,6 +301,15 @@ namespace CShellNet
             {
                 throw new InvalidOperationException(
                     $"\"{name}\" cannot be declared after a Rest -- a rest collects everything left, so nothing can follow it.");
+            }
+
+            // A command word and a positional are the same shape of token -- a bare word in the
+            // same place -- so one level cannot have both without the first one being a guess.
+            if (this.commands.Count > 0)
+            {
+                throw new InvalidOperationException(
+                    $"\"{name}\" cannot be declared beside commands -- the first bare word is the command, " +
+                    $"so there is nowhere for a positional to go. Declare it inside the command that takes it.");
             }
 
             // A Rest changes what counts as a switch from the first positional onward, and a typed
@@ -380,6 +435,29 @@ namespace CShellNet
             {
                 throw new InvalidOperationException(
                     $"\"{parts[0]}\" is already declared as an argument -- one name cannot mean both.");
+            }
+
+            foreach (var key in keys)
+            {
+                if (FindCommand(key) != null)
+                {
+                    throw new InvalidOperationException(
+                        $"\"{parts[0]}\" is already declared as a command -- one name cannot mean both.");
+                }
+
+                // A global and a command's own switch of the same name are two different values
+                // that read identically, and which one a reader gets depends on which side of the
+                // command word it was typed. That is the quiet kind of wrong, so it is refused.
+                for (var above = this.parent; above != null; above = above.parent)
+                {
+                    var global = above.Find(key);
+                    if (global != null && !global.BuiltIn)
+                    {
+                        throw new InvalidOperationException(
+                            $"\"{parts[0]}\" is already declared by '{above.program}' -- a command cannot redeclare a global. " +
+                            $"Read it from the result instead; a global stays readable from the command's result.");
+                    }
+                }
             }
 
             // A user declaration REPLACES a built-in of the same name. That is how a script gives
@@ -915,6 +993,275 @@ namespace CShellNet
             return this;
         }
 
+        // ------------------------------------------------------------------ commands
+
+        /// <summary>
+        /// Declare a verb with a command line of its own.
+        /// </summary>
+        /// <remarks>
+        /// A command is a Cli in its own right. It gets the tokens after its own name, declares
+        /// them with the same three words, and has its own generated help and its own name in
+        /// every message it prints -- `svc nuget push: missing &lt;package&gt;.`
+        ///
+        ///     Cli.For(Args)
+        ///        .Command("start", "start the service", c =&gt;
+        ///        {
+        ///            c.Argument(out string file, "the file to start");
+        ///            c.Run(() =&gt; Start(file));
+        ///        })
+        ///        .Parse();
+        ///
+        /// Commands NEST, because the thing handed to the lambda is a Cli and a Cli takes
+        /// commands: `.Command("nuget", ..., c =&gt; c.Command("push", ...))` is `svc nuget push`.
+        ///
+        /// The lambda runs only for the command that was actually typed. That is what lets each
+        /// command declare typed variables of its own -- nothing binds for a command nobody asked
+        /// for -- and it is why `--help` at this level can list the commands without building any
+        /// of them. The cost, stated so it is not a surprise: a mistake INSIDE a lambda, such as
+        /// asking for a type that cannot be made from a string, is found the first time that
+        /// command is typed rather than the first time the script is run.
+        ///
+        /// Aliases go in the name after a pipe -- `Command("remove|rm", "...")` -- exactly as they
+        /// do on a Switch, and the name is matched the same way: case, hyphens and underscores are
+        /// ignored, so `Command("dry-run", ...)` also answers to `dryrun`.
+        ///
+        /// A level with commands cannot also have positionals: the first bare word is the command,
+        /// so there is nowhere for one to go. Switches at this level are GLOBAL -- they are typed
+        /// before the command word, `svc --verbose start foo`, and stay readable from the
+        /// command's own result. Typed globals must be declared AFTER the first Command(), because
+        /// a typed declaration reads its value as it runs and before the first Command() this
+        /// level does not yet know that the line splits.
+        ///
+        /// WATCH THE VARIABLE NAMES. The lambda's body is nested inside the script's own scope, so
+        /// `c.Argument(out string file, ...)` will not compile if the script already has a `file`
+        /// further down (CS0136). Two sibling commands may each declare `file`; the enclosing
+        /// script may not have one too.
+        /// </remarks>
+        /// <param name="name">the verb, optionally followed by |aliases</param>
+        /// <param name="help">the one line shown beside it in the command list</param>
+        /// <param name="declare">what the command accepts, and what it does</param>
+        /// <returns>the builder, to go on declaring</returns>
+        /// <exception cref="ArgumentNullException">declare is null</exception>
+        /// <exception cref="ArgumentException">the name or help is unusable</exception>
+        /// <exception cref="InvalidOperationException">it cannot follow what is already declared</exception>
+        public Cli Command(string name, string help, Action<Cli> declare)
+        {
+            CheckName(name, help, "Command");
+
+            if (declare == null)
+            {
+                throw new ArgumentNullException(nameof(declare),
+                    $"Command(\"{name}\") needs the lambda that declares what it accepts.");
+            }
+
+            var parts = name.Split('|').Select(p => p.Trim()).ToArray();
+            if (parts.Any(p => p.Length == 0))
+            {
+                throw new ArgumentException($"\"{name}\" has an empty name or alias between its pipes.", nameof(name));
+            }
+
+            if (parts.Any(p => p.Any(Char.IsWhiteSpace)))
+            {
+                throw new ArgumentException($"\"{name}\" has whitespace inside a name or alias.", nameof(name));
+            }
+
+            var keys = parts.Select(Normalize).ToArray();
+            if (keys.Distinct().Count() != keys.Length)
+            {
+                throw new ArgumentException($"\"{name}\" names the same thing twice.", nameof(name));
+            }
+
+            // The same reason Rest() cannot follow one: a command word moves where this level's
+            // switches stop, and a typed declaration has already read its value without knowing
+            // that. Rather than hand back a value read under rules that no longer hold, say so at
+            // the declaration that made it ambiguous.
+            if (this.typedDeclared)
+            {
+                throw new InvalidOperationException(
+                    $"Command(\"{parts[0]}\") cannot come after a typed declaration -- the command word is where this " +
+                    "level's switches stop, and the typed values were read without knowing that. Declare every " +
+                    "Command() first, then the typed globals after them.");
+            }
+
+            if (this.arguments.Count > 0)
+            {
+                throw new InvalidOperationException(
+                    $"Command(\"{parts[0]}\") cannot be declared beside <{this.arguments[0].Name}> -- the first bare " +
+                    "word is either a command or a positional, and it cannot be worked out which.");
+            }
+
+            if (this.handler != null || this.asyncHandler != null)
+            {
+                throw new InvalidOperationException(
+                    $"Command(\"{parts[0]}\") cannot be declared beside a Run() -- a level either does something " +
+                    "itself or hands off to commands that do.");
+            }
+
+            foreach (var key in keys)
+            {
+                if (FindCommand(key) != null)
+                {
+                    throw new InvalidOperationException(
+                        $"\"{parts[0]}\" collides with \"{FindCommand(key).Primary}\" -- they are the same command " +
+                        "once case, hyphens and underscores are ignored.");
+                }
+
+                var clash = Find(key);
+                if (clash != null && !clash.BuiltIn)
+                {
+                    throw new InvalidOperationException(
+                        $"\"{parts[0]}\" is already declared as a switch -- one name cannot mean both.");
+                }
+            }
+
+            this.commands.Add(new CommandSpec(parts, keys, help, declare));
+            return this;
+        }
+
+        /// <summary>
+        /// Say what this command does when it is the one that was typed.
+        /// </summary>
+        /// <remarks>
+        /// Declared beside the command's own declarations, so the variables it uses are the ones
+        /// just declared and there is nothing to pass:
+        ///
+        ///     .Command("start", "start the service", c =&gt;
+        ///     {
+        ///         c.Argument(out string file, "the file to start");
+        ///         c.Run(() =&gt; Start(file));
+        ///     })
+        ///
+        /// This is the ONLY way to use a command's typed variables, and not by choice: an out
+        /// variable belongs to the block it was declared in, so it cannot be read after the lambda
+        /// returns. A script that would rather read its values back at the end declares them with
+        /// the (name, help) overloads and reads them off the result, which knows which command was
+        /// chosen -- see CliResult.Command.
+        ///
+        /// The handler runs only after the whole line has been read and found good, so a value
+        /// that was missing or would not convert stops it from running at all.
+        ///
+        /// Run() belongs to a command. At the top level the script's own code is the handler --
+        /// the variables are already in scope where Parse() returns -- and a level that has
+        /// commands hands off to them rather than doing anything itself.
+        /// </remarks>
+        /// <param name="handler">what to do</param>
+        /// <returns>the builder, to go on declaring</returns>
+        /// <exception cref="ArgumentNullException">handler is null</exception>
+        /// <exception cref="InvalidOperationException">this is not a leaf command, or it already has a handler</exception>
+        public Cli Run(Action handler)
+        {
+            if (handler == null) { throw new ArgumentNullException(nameof(handler), "Run() needs something to do."); }
+
+            CheckHandler("Run");
+            this.handler = () => { handler(); return 0; };
+            return this;
+        }
+
+        /// <summary>
+        /// Say what this command does, and what the script should exit with.
+        /// </summary>
+        /// <remarks>
+        /// What comes back lands on CliResult.ExitCode, and Parse() returns rather than exiting --
+        /// a command that ran is not a command line that could not be read, and the script says
+        /// how it ends: `return Cli.For(Args)....Parse().ExitCode;`
+        ///
+        /// ShouldExit tells the two apart. It is false here, whatever the code; it is true only
+        /// when the line was not understood, which is the case Parse() exits for.
+        /// </remarks>
+        /// <param name="handler">what to do, and what to exit with</param>
+        /// <returns>the builder, to go on declaring</returns>
+        /// <exception cref="ArgumentNullException">handler is null</exception>
+        /// <exception cref="InvalidOperationException">this is not a leaf command, or it already has a handler</exception>
+        public Cli Run(Func<int> handler)
+        {
+            if (handler == null) { throw new ArgumentNullException(nameof(handler), "Run() needs something to do."); }
+
+            CheckHandler("Run");
+            this.handler = handler;
+            return this;
+        }
+
+        /// <summary>
+        /// Say what this command does, when doing it is asynchronous.
+        /// </summary>
+        /// <remarks>
+        ///     .Command("push", "push a package", p =&gt;
+        ///     {
+        ///         p.Argument(out string package, "the .nupkg to push");
+        ///         p.RunAsync(async () =&gt; await Push(package));
+        ///     })
+        ///
+        /// then `await ...ParseAsync()` rather than Parse().
+        ///
+        /// Its own name rather than another Run() overload, because `Run(async () =&gt; ...)` would
+        /// happily bind to Run(Action) as an async void that nobody ever awaits -- the script
+        /// would exit while the work was still running, and nothing would say so. A separate name
+        /// cannot be got wrong that way.
+        ///
+        /// Parse() throws when an async handler was declared, naming ParseAsync(), rather than
+        /// blocking on it.
+        /// </remarks>
+        /// <param name="handler">what to do</param>
+        /// <returns>the builder, to go on declaring</returns>
+        /// <exception cref="ArgumentNullException">handler is null</exception>
+        /// <exception cref="InvalidOperationException">this is not a leaf command, or it already has a handler</exception>
+        public Cli RunAsync(Func<Task> handler)
+        {
+            if (handler == null) { throw new ArgumentNullException(nameof(handler), "RunAsync() needs something to do."); }
+
+            CheckHandler("RunAsync");
+            this.asyncHandler = async () => { await handler().ConfigureAwait(false); return 0; };
+            return this;
+        }
+
+        /// <summary>
+        /// Say what this command does asynchronously, and what the script should exit with.
+        /// </summary>
+        /// <remarks>
+        /// The pairing of RunAsync(Func&lt;Task&gt;) and Run(Func&lt;int&gt;): awaited by ParseAsync(),
+        /// and what it returns lands on CliResult.ExitCode without exiting the process.
+        /// </remarks>
+        /// <param name="handler">what to do, and what to exit with</param>
+        /// <returns>the builder, to go on declaring</returns>
+        /// <exception cref="ArgumentNullException">handler is null</exception>
+        /// <exception cref="InvalidOperationException">this is not a leaf command, or it already has a handler</exception>
+        public Cli RunAsync(Func<Task<int>> handler)
+        {
+            if (handler == null) { throw new ArgumentNullException(nameof(handler), "RunAsync() needs something to do."); }
+
+            CheckHandler("RunAsync");
+            this.asyncHandler = handler;
+            return this;
+        }
+
+        void CheckHandler(string what)
+        {
+            if (this.parent == null)
+            {
+                throw new InvalidOperationException(
+                    $"{what}() belongs to a command, and this is the top level -- the script's own code runs when " +
+                    "Parse() returns, with the variables already in scope. Declare a Command() and put it there.");
+            }
+
+            if (this.commands.Count > 0)
+            {
+                throw new InvalidOperationException(
+                    $"{what}() cannot be declared beside commands -- '{this.program}' hands off to its commands, " +
+                    "so put the handler on the one that does the work.");
+            }
+
+            if (this.handler != null || this.asyncHandler != null)
+            {
+                throw new InvalidOperationException(
+                    $"'{this.program}' already has a handler -- a command does one thing.");
+            }
+        }
+
+        CommandSpec FindCommand(string key)
+        {
+            return this.commands.FirstOrDefault(c => c.Keys.Contains(key));
+        }
+
         SwitchSpec Find(string key)
         {
             return this.switches.FirstOrDefault(s => s.Keys.Contains(key));
@@ -970,6 +1317,31 @@ namespace CShellNet
         }
 
         /// <summary>
+        /// Read the command line and await the command's handler, stopping the script if it was
+        /// not valid or help was asked for.
+        /// </summary>
+        /// <remarks>
+        /// Parse() for a script whose commands declared RunAsync(). Everything else is the same,
+        /// including exiting for a line that could not be read and NOT exiting for a handler that
+        /// returned a code -- that lands on ExitCode for the script to return.
+        ///
+        /// Parse() throws rather than blocking when an async handler was declared, so a script
+        /// that forgot the await is told, not left to exit while the work is still running.
+        /// </remarks>
+        /// <returns>the parsed command line, always readable</returns>
+        public async Task<CliResult> ParseAsync()
+        {
+            var cmd = await TryParseAsync().ConfigureAwait(false);
+
+            if (cmd.ShouldExit)
+            {
+                Environment.Exit(cmd.ExitCode);
+            }
+
+            return cmd;
+        }
+
+        /// <summary>
         /// Read the command line without ever exiting the process.
         /// </summary>
         /// <remarks>
@@ -982,6 +1354,69 @@ namespace CShellNet
         /// <returns>the parsed command line, which may be one that should not be used</returns>
         public CliResult TryParse()
         {
+            Cli leaf;
+            var cmd = Resolve(null, out leaf);
+
+            if (cmd.ShouldExit)
+            {
+                return cmd;
+            }
+
+            if (leaf.asyncHandler != null)
+            {
+                throw new InvalidOperationException(
+                    $"'{leaf.program}' declared an async handler with RunAsync(), so it has to be awaited -- " +
+                    "call ParseAsync() instead of Parse().");
+            }
+
+            if (leaf.handler != null)
+            {
+                cmd.Ran(leaf.handler());
+            }
+
+            return cmd;
+        }
+
+        /// <summary>
+        /// Read the command line and await the command's handler, without ever exiting the process.
+        /// </summary>
+        /// <remarks>
+        /// TryParse() for a script whose commands declared RunAsync(). A command that declared a
+        /// plain Run() still works here, so a script with a mix of both needs only this one.
+        /// </remarks>
+        /// <returns>the parsed command line, which may be one that should not be used</returns>
+        public async Task<CliResult> TryParseAsync()
+        {
+            Cli leaf;
+            var cmd = Resolve(null, out leaf);
+
+            if (cmd.ShouldExit)
+            {
+                return cmd;
+            }
+
+            if (leaf.asyncHandler != null)
+            {
+                cmd.Ran(await leaf.asyncHandler().ConfigureAwait(false));
+            }
+            else if (leaf.handler != null)
+            {
+                cmd.Ran(leaf.handler());
+            }
+
+            return cmd;
+        }
+
+        // Everything TryParse() does except run the handler: read this level, and either finish
+        // here or hand what is left to the command that was named and let it do the same. What
+        // comes back is the LEAF's result -- the level whose line was actually being read -- with
+        // Parent chaining back up, and `leaf` is the Cli it came from, which is where the handler
+        // lives.
+        CliResult Resolve(CliResult above, out Cli leaf)
+        {
+            leaf = this;
+            this.parentResult = above;
+
             var scan = ScanTokens();
             var values = scan.Values;
             var flags = scan.Flags;
@@ -1003,28 +1438,48 @@ namespace CShellNet
             if (this.usageWhenEmpty && this.tokens.Count == 0)
             {
                 Console.Out.WriteLine(usage);
-                return CliResult.Exiting(this.program, 0, null, true, usage);
+                return CliResult.Exiting(this.program, 0, null, true, usage, this.parentResult, this.commandName);
             }
 
             if (helpAsked)
             {
                 Console.Out.WriteLine(usage);
-                return CliResult.Exiting(this.program, 0, null, true, usage);
+                return CliResult.Exiting(this.program, 0, null, true, usage, this.parentResult, this.commandName);
             }
 
             // Switch-level trouble is reported on its own. Once the switches were misread the
             // positional list means nothing, and reporting it as well would echo tokens -- possibly
-            // a secret -- that the user never meant as arguments.
+            // a secret -- that the user never meant as arguments. It is also reported BEFORE the
+            // command is resolved, so a command whose globals were misread is never built.
             if (unknown.Count > 0 || badValues.Count > 0)
             {
                 var lines = new List<string>();
-                if (unknown.Count == 1)
+                var strays = new List<string>();
+
+                foreach (var token in unknown)
                 {
-                    lines.Add($"{this.program}: unknown switch '{unknown[0]}'");
+                    var declaredAbove = DeclaredAbove(token);
+                    if (declaredAbove == null)
+                    {
+                        strays.Add(token);
+                    }
+                    else
+                    {
+                        // Typed on the wrong side of the command word. Saying where it goes is the
+                        // difference between a dead end and a fix.
+                        var below = this.program.Substring(declaredAbove.program.Length).Trim();
+                        lines.Add($"{this.program}: '{token}' is a global switch -- write it before the command: " +
+                                  $"'{declaredAbove.program} {token} {below}'.");
+                    }
                 }
-                else if (unknown.Count > 1)
+
+                if (strays.Count == 1)
                 {
-                    lines.Add($"{this.program}: unknown switches: {String.Join(" ", unknown.Select(u => "'" + u + "'"))}");
+                    lines.Add($"{this.program}: unknown switch '{strays[0]}'");
+                }
+                else if (strays.Count > 1)
+                {
+                    lines.Add($"{this.program}: unknown switches: {String.Join(" ", strays.Select(u => "'" + u + "'"))}");
                 }
 
                 foreach (var bad in badValues)
@@ -1033,6 +1488,38 @@ namespace CShellNet
                 }
 
                 return Failed(String.Join(Environment.NewLine, lines), usage);
+            }
+
+            // A level with commands reads its own globals and then gets out of the way: everything
+            // from the command word on belongs to the command, which reads it the same way.
+            if (this.commands.Count > 0)
+            {
+                var mine = CliResult.Parsed(this.program, usage, flags, values,
+                                            new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase),
+                                            new List<string>(), this.switches, this.arguments,
+                                            this.whatIfDeclared, this.parentResult, this.commandName);
+
+                if (scan.CommandIndex < 0)
+                {
+                    return Failed($"{this.program}: no command given -- one of: {CommandList()}.", usage);
+                }
+
+                var word = this.tokens[scan.CommandIndex];
+                var chosen = FindCommand(Normalize(word));
+
+                if (chosen == null)
+                {
+                    return Failed($"{this.program}: unknown command '{word}' -- expected one of: {CommandList()}.", usage);
+                }
+
+                var child = new Cli(this.tokens.Skip(scan.CommandIndex + 1).ToList(),
+                                    this.program + " " + chosen.Primary, this, chosen.Primary);
+
+                // Only now, and only for the command that was actually typed: this is where its
+                // typed declarations bind, against its own tokens.
+                chosen.Declare(child);
+
+                return child.Resolve(mine, out leaf);
             }
 
             // Fill the declared positionals in order, then the rest.
@@ -1078,14 +1565,42 @@ namespace CShellNet
             }
 
             return CliResult.Parsed(this.program, usage, flags, values, taken, tail,
-                                    this.switches, this.arguments, this.whatIfDeclared);
+                                    this.switches, this.arguments, this.whatIfDeclared,
+                                    this.parentResult, this.commandName);
         }
 
         CliResult Failed(string error, string usage)
         {
+            var takes = this.commands.Count > 0 ? "commands" : "switches";
+
             Console.Error.WriteLine(error);
-            Console.Error.WriteLine($"Try '{this.program} --help' for the switches it takes.");
-            return CliResult.Exiting(this.program, 1, error, false, usage);
+            Console.Error.WriteLine($"Try '{this.program} --help' for the {takes} it takes.");
+            return CliResult.Exiting(this.program, 1, error, false, usage, this.parentResult, this.commandName);
+        }
+
+        string CommandList()
+        {
+            return String.Join(", ", this.commands.Select(c => c.Primary));
+        }
+
+        // Which level above declared this switch, if any. An unknown switch inside a command is
+        // very often a global typed after the command word instead of before it.
+        Cli DeclaredAbove(string raw)
+        {
+            var body = raw.TrimStart('-');
+            var sep = body.IndexOfAny(new[] { ':', '=' });
+            var key = Normalize(sep >= 0 ? body.Substring(0, sep) : body);
+
+            for (var above = this.parent; above != null; above = above.parent)
+            {
+                var spec = above.Find(key);
+                if (spec != null && !spec.BuiltIn)
+                {
+                    return above;
+                }
+            }
+
+            return null;
         }
 
         static string Dash(string name)
@@ -1102,6 +1617,10 @@ namespace CShellNet
             public readonly List<string> Positionals = new List<string>();
             public readonly List<string> Unknown = new List<string>();
             public readonly List<string> BadValues = new List<string>();
+
+            // Where the command word is, at a level that has commands; -1 when none was given.
+            // Everything from here on belongs to the command, so the scan stops.
+            public int CommandIndex = -1;
         }
 
         // The one place the command line is turned into flags, values and positionals. Both the
@@ -1115,10 +1634,25 @@ namespace CShellNet
             var stopSwitches = false;
             var restDeclared = this.arguments.Any(a => a.IsRest);
 
-            foreach (var raw in this.tokens)
+            // Where a level has commands, the first thing that is not a switch is the command
+            // word, and the scan stops there: the rest is the command's line, not this one's.
+            // The boundary is only unambiguous because an option's value ATTACHES -- with a
+            // separated value, `svc --out foo build` could not be told apart from `svc --out:foo
+            // build` with a stray positional.
+            var hasCommands = this.commands.Count > 0;
+
+            for (int i = 0; i < this.tokens.Count; i++)
             {
+                var raw = this.tokens[i];
+
                 if (terminated || stopSwitches)
                 {
+                    if (hasCommands)
+                    {
+                        scan.CommandIndex = i;
+                        return scan;
+                    }
+
                     scan.Positionals.Add(raw);
                     continue;
                 }
@@ -1131,6 +1665,12 @@ namespace CShellNet
 
                 if (raw.Length == 0 || raw == "-" || raw[0] != '-')
                 {
+                    if (hasCommands)
+                    {
+                        scan.CommandIndex = i;
+                        return scan;
+                    }
+
                     scan.Positionals.Add(raw);
 
                     // A declared Rest hands everything from the first positional onward to whatever
@@ -1161,6 +1701,12 @@ namespace CShellNet
                     // dash was meant as a switch, so say that it is not one.
                     if (namePart.Length > 0 && Char.IsDigit(namePart[0]))
                     {
+                        if (hasCommands)
+                        {
+                            scan.CommandIndex = i;
+                            return scan;
+                        }
+
                         scan.Positionals.Add(raw);
                         if (restDeclared) { stopSwitches = true; }
                     }
@@ -1220,24 +1766,45 @@ namespace CShellNet
             }
 
             var spelled = this.switches.Select(Spelling).ToList();
-            var line = new StringBuilder("  " + this.program);
-            foreach (var arg in this.arguments)
-            {
-                line.Append(arg.IsRest ? $" [{arg.Name}...]" : arg.Required ? $" <{arg.Name}>" : $" [{arg.Name}]");
-            }
-
-            var withSwitches = new StringBuilder(line.ToString());
-            foreach (var s in this.switches)
-            {
-                withSwitches.Append(" [" + Spelling(s) + "]");
-            }
+            var named = this.commands.Select(c => String.Join(", ", c.Spellings)).ToList();
 
             text.AppendLine("Usage:");
-            text.AppendLine(withSwitches.Length <= 78 ? withSwitches.ToString() : line + " [switches]");
 
-            // One column across both sections, so the two lists line up as one block.
+            if (this.commands.Count > 0)
+            {
+                // Switches come BEFORE the command word here, because that is where they have to
+                // be typed, so the usage line teaches the grammar in the order the tokens go.
+                var head = "  " + this.program;
+                var withGlobals = new StringBuilder(head);
+                foreach (var s in this.switches)
+                {
+                    withGlobals.Append(" [" + Spelling(s) + "]");
+                }
+
+                withGlobals.Append(" <command> ...");
+                text.AppendLine(withGlobals.Length <= 78 ? withGlobals.ToString() : head + " [switches] <command> ...");
+            }
+            else
+            {
+                var line = new StringBuilder("  " + this.program);
+                foreach (var arg in this.arguments)
+                {
+                    line.Append(arg.IsRest ? $" [{arg.Name}...]" : arg.Required ? $" <{arg.Name}>" : $" [{arg.Name}]");
+                }
+
+                var withSwitches = new StringBuilder(line.ToString());
+                foreach (var s in this.switches)
+                {
+                    withSwitches.Append(" [" + Spelling(s) + "]");
+                }
+
+                text.AppendLine(withSwitches.Length <= 78 ? withSwitches.ToString() : line + " [switches]");
+            }
+
+            // One column across every section, so the lists line up as one block.
             var widest = 0;
             foreach (var a in this.arguments) { widest = Math.Max(widest, a.Name.Length); }
+            foreach (var c in named) { widest = Math.Max(widest, c.Length); }
             foreach (var s in spelled) { widest = Math.Max(widest, s.Length); }
             var column = Math.Min(2 + widest + 2, 30);
 
@@ -1248,6 +1815,16 @@ namespace CShellNet
                 foreach (var a in this.arguments)
                 {
                     Row(text, a.Name, a.Help, column);
+                }
+            }
+
+            if (this.commands.Count > 0)
+            {
+                text.AppendLine();
+                text.AppendLine("Commands:");
+                for (int i = 0; i < this.commands.Count; i++)
+                {
+                    Row(text, named[i], this.commands[i].Help, column);
                 }
             }
 
@@ -1270,6 +1847,12 @@ namespace CShellNet
                         text.AppendLine("      " + e.Value);
                     }
                 }
+            }
+
+            if (this.commands.Count > 0)
+            {
+                text.AppendLine();
+                text.AppendLine($"See '{this.program} <command> --help' for what a command takes.");
             }
 
             return text.ToString().TrimEnd();
@@ -1340,6 +1923,31 @@ namespace CShellNet
         public bool TakesValue { get; private set; }
 
         public bool BuiltIn { get; private set; }
+    }
+
+    internal class CommandSpec
+    {
+        public CommandSpec(string[] spellings, string[] keys, string help, Action<Cli> declare)
+        {
+            this.Spellings = spellings;
+            this.Primary = spellings[0];
+            this.Keys = keys;
+            this.Help = help;
+            this.Declare = declare;
+        }
+
+        public string Primary { get; private set; }
+
+        // As the author wrote them, for the command list. Keys are what a typed word is matched
+        // against, normalized the same way a switch's are.
+        public string[] Spellings { get; private set; }
+
+        public string[] Keys { get; private set; }
+
+        public string Help { get; private set; }
+
+        // Held, not run. It runs once, for the command that was actually typed.
+        public Action<Cli> Declare { get; private set; }
     }
 
     internal class ArgSpec

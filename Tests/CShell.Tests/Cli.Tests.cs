@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace CShellLibTests
 {
@@ -1227,6 +1228,583 @@ namespace CShellLibTests
 
             Assert.IsFalse(cmd.ShouldExit);
             Assert.IsFalse(cmd.Switch("whatif"));
+        }
+
+        // ------------------------------------------------------------------ commands
+
+        [TestMethod]
+        public void Command_DispatchesToTheCommandThatWasTyped()
+        {
+            var ran = "nothing";
+
+            Given("start")
+                .Command("start", "start the service", c => c.Run(() => { ran = "start"; }))
+                .Command("stop", "stop the service", c => c.Run(() => { ran = "stop"; }))
+                .TryParse();
+
+            Assert.AreEqual("start", ran);
+        }
+
+        [TestMethod]
+        public void Command_IsMatchedIgnoringCaseHyphensAndUnderscores()
+        {
+            foreach (var typed in new[] { "dry-run", "dryrun", "DRY_RUN", "Dry-Run" })
+            {
+                Capture();
+                var ran = false;
+                var cmd = Given(typed).Command("dry-run", "rehearse it", c => c.Run(() => { ran = true; })).TryParse();
+
+                Assert.IsFalse(cmd.ShouldExit, typed);
+                Assert.IsTrue(ran, typed);
+            }
+        }
+
+        [TestMethod]
+        public void Command_AliasesAfterThePipeSelectTheSameCommand()
+        {
+            foreach (var typed in new[] { "remove", "rm" })
+            {
+                Capture();
+                var cmd = Given(typed).Command("remove|rm", "take one away", c => { }).TryParse();
+
+                Assert.IsFalse(cmd.ShouldExit, typed);
+                Assert.AreEqual("remove", cmd.Command, "the primary spelling, whichever alias was typed");
+            }
+        }
+
+        [TestMethod]
+        public void Command_ReadsBackOffTheResultForScriptsThatSwitchThemselves()
+        {
+            // The other half of the contract: a script that would rather not declare a handler
+            // reads which command was chosen and takes its values off the same result.
+            var cmd = Given("start", "foo.txt", "--force")
+                .Command("start", "start it", c => c
+                    .Argument("file", "the file")
+                    .Switch("force", "start anyway"))
+                .Command("stop", "stop it", c => c.Option("timeout", "seconds to wait"))
+                .TryParse();
+
+            Assert.AreEqual("start", cmd.Command);
+            Assert.AreEqual("foo.txt", cmd.Argument("file"));
+            Assert.IsTrue(cmd.Switch("force"));
+        }
+
+        [TestMethod]
+        public void Command_OnlyTheMatchedCommandsDeclarationsAreEverRun()
+        {
+            // What makes typed variables safe inside a command: nothing binds for a command
+            // nobody asked for.
+            var built = new List<string>();
+
+            Given("start")
+                .Command("start", "start it", c => { built.Add("start"); })
+                .Command("stop", "stop it", c => { built.Add("stop"); })
+                .TryParse();
+
+            CollectionAssert.AreEqual(new[] { "start" }, built.ToArray());
+        }
+
+        [TestMethod]
+        public void Command_NestsToAnyDepth()
+        {
+            string pushed = null;
+
+            var cmd = Given("nuget", "push", "x.nupkg")
+                .Command("nuget", "work with the feed", c => c
+                    .Command("push", "push a package", p =>
+                    {
+                        p.Argument(out string package, "the .nupkg to push");
+                        p.Run(() => { pushed = package; });
+                    }))
+                .TryParse();
+
+            Assert.IsFalse(cmd.ShouldExit);
+            Assert.AreEqual("x.nupkg", pushed);
+            Assert.AreEqual("demo nuget push", cmd.ProgramName);
+        }
+
+        [TestMethod]
+        public void Command_PathNamesEveryLevelThatWasTyped()
+        {
+            var cmd = Given("nuget", "push", "x.nupkg")
+                .Command("nuget", "work with the feed", c => c
+                    .Command("push", "push a package", p => p.Argument("package", "the .nupkg")))
+                .TryParse();
+
+            CollectionAssert.AreEqual(new[] { "nuget", "push" }, cmd.CommandPath.ToArray());
+            Assert.AreEqual("push", cmd.Command);
+        }
+
+        [TestMethod]
+        public void Command_TheResultIsTheLeafAndKnowsItsParent()
+        {
+            var cmd = Given("start", "foo.txt")
+                .Command("start", "start it", c => c.Argument("file", "the file"))
+                .TryParse();
+
+            Assert.AreEqual("demo start", cmd.ProgramName);
+            Assert.IsNotNull(cmd.Parent);
+            Assert.AreEqual("demo", cmd.Parent.ProgramName);
+            Assert.IsNull(cmd.Parent.Command);
+        }
+
+        [TestMethod]
+        public void Command_TypedVariablesAreBoundFromTheTokensAfterTheCommandWord()
+        {
+            string seen = null;
+            var forced = false;
+
+            Given("start", "foo.txt", "--force")
+                .Command("start", "start it", c =>
+                {
+                    c.Argument(out string file, "the file to start");
+                    c.Switch(out bool force, "start it anyway");
+                    c.Run(() => { seen = file; forced = force; });
+                })
+                .TryParse();
+
+            Assert.AreEqual("foo.txt", seen);
+            Assert.IsTrue(forced);
+        }
+
+        [TestMethod]
+        public void Command_AMissingArgumentIsReportedAgainstTheCommandNotTheProgram()
+        {
+            var cmd = Given("start").Command("start", "start it", c => c.Argument("file", "the file")).TryParse();
+
+            Assert.IsTrue(cmd.ShouldExit);
+            StringAssert.Contains(this.Errors, "demo start: missing <file>");
+            StringAssert.Contains(this.Errors, "Try 'demo start --help'");
+        }
+
+        [TestMethod]
+        public void Command_ARestInsideACommandCollectsWhatFollowsIt()
+        {
+            var cmd = Given("exec", "cmd.exe", "/k", "dir")
+                .Command("exec", "run something", c => c
+                    .Argument("program", "what to run")
+                    .Rest("args", "passed through"))
+                .TryParse();
+
+            Assert.AreEqual("cmd.exe", cmd.Argument("program"));
+            CollectionAssert.AreEqual(new[] { "/k", "dir" }, cmd.Rest.ToArray());
+        }
+
+        [TestMethod]
+        public void Command_GlobalSwitchesBeforeTheCommandAreTheProgramsOwn()
+        {
+            var cmd = Given("--verbose", "start")
+                .Command("start", "start it", c => { })
+                .Switch("verbose", "say what is happening")
+                .TryParse();
+
+            Assert.IsFalse(cmd.ShouldExit);
+            Assert.AreEqual("start", cmd.Command);
+            Assert.IsTrue(cmd.Switch("verbose"), "a global is readable from the command's own result");
+        }
+
+        [TestMethod]
+        public void Command_TheProgramsOptionsAndWhatIfAreReadableFromTheCommandsResult()
+        {
+            var cmd = Given("--source:https://nuget.org", "-whatif", "push")
+                .Command("push", "push a package", c => { })
+                .Option("source", "the feed to use")
+                .WhatIf()
+                .TryParse();
+
+            Assert.AreEqual("https://nuget.org", cmd.Option("source"));
+            Assert.IsTrue(cmd.WhatIf);
+        }
+
+        [TestMethod]
+        public void Command_ATypedGlobalBindsOnlyFromBeforeTheCommandWord()
+        {
+            // Declared after the first Command(), so the boundary is known when it reads.
+            var cli = Given("--verbose", "start", "foo.txt")
+                .Command("start", "start it", c => c.Argument("file", "the file"))
+                .Switch(out bool verbose, "say what is happening");
+
+            Assert.IsTrue(verbose);
+            Assert.IsFalse(cli.TryParse().ShouldExit);
+        }
+
+        [TestMethod]
+        public void Command_AGlobalWrittenAfterTheCommandIsRejectedAndSaysWhereItGoes()
+        {
+            var cmd = Given("start", "--verbose")
+                .Command("start", "start it", c => { })
+                .Switch("verbose", "say what is happening")
+                .TryParse();
+
+            Assert.IsTrue(cmd.ShouldExit);
+            StringAssert.Contains(this.Errors, "'--verbose' is a global switch");
+            StringAssert.Contains(this.Errors, "'demo --verbose start'");
+        }
+
+        [TestMethod]
+        public void Command_AnUnknownGlobalIsReportedBeforeTheCommandIsResolved()
+        {
+            var built = false;
+            var cmd = Given("--nope", "start").Command("start", "start it", c => { built = true; }).TryParse();
+
+            Assert.IsTrue(cmd.ShouldExit);
+            StringAssert.Contains(this.Errors, "demo: unknown switch '--nope'");
+            Assert.IsFalse(built, "once the globals were misread there is nothing to say about the rest");
+        }
+
+        [TestMethod]
+        public void Command_AnUnknownSwitchInsideACommandNamesTheCommandInTheError()
+        {
+            var cmd = Given("start", "--nope").Command("start", "start it", c => { }).TryParse();
+
+            Assert.IsTrue(cmd.ShouldExit);
+            StringAssert.Contains(this.Errors, "demo start: unknown switch '--nope'");
+        }
+
+        [TestMethod]
+        public void Command_ADoubleDashEndsTheGlobalsAndTheNextWordIsTheCommand()
+        {
+            var cmd = Given("--", "start").Command("start", "start it", c => { }).TryParse();
+
+            Assert.IsFalse(cmd.ShouldExit);
+            Assert.AreEqual("start", cmd.Command);
+        }
+
+        [TestMethod]
+        public void Command_NoCommandGivenIsAnErrorThatListsTheCommands()
+        {
+            var cmd = Given()
+                .Command("start", "start it", c => { })
+                .Command("stop", "stop it", c => { })
+                .TryParse();
+
+            Assert.IsTrue(cmd.ShouldExit);
+            Assert.AreEqual(1, cmd.ExitCode);
+            StringAssert.Contains(this.Errors, "demo: no command given -- one of: start, stop.");
+            StringAssert.Contains(this.Errors, "Try 'demo --help' for the commands it takes.");
+        }
+
+        [TestMethod]
+        public void Command_AnUnknownCommandIsAnErrorThatListsTheCommands()
+        {
+            var cmd = Given("strat").Command("start", "start it", c => { }).TryParse();
+
+            Assert.IsTrue(cmd.ShouldExit);
+            StringAssert.Contains(this.Errors, "demo: unknown command 'strat' -- expected one of: start.");
+        }
+
+        [TestMethod]
+        public void Command_UsageWhenEmptyPrintsTheCommandListAndExitsZero()
+        {
+            var cmd = Given().UsageWhenEmpty().Command("start", "start it", c => { }).TryParse();
+
+            Assert.IsTrue(cmd.ShouldExit);
+            Assert.AreEqual(0, cmd.ExitCode);
+            StringAssert.Contains(this.Screen, "Commands:");
+            Assert.AreEqual(String.Empty, this.Errors);
+        }
+
+        [TestMethod]
+        public void Help_ListsCommandsWithTheirAliasesAndTeachesTheGrammar()
+        {
+            Given("--help")
+                .Description("Manages the service.")
+                .Command("start", "start the service", c => { })
+                .Command("remove|rm", "take one away", c => { })
+                .Switch("verbose", "say what is happening")
+                .TryParse();
+
+            StringAssert.Contains(this.Screen, "Manages the service.");
+            StringAssert.Contains(this.Screen, "Commands:");
+            StringAssert.Contains(this.Screen, "start the service");
+            StringAssert.Contains(this.Screen, "remove, rm");
+            StringAssert.Contains(this.Screen, "<command> ...");
+            StringAssert.Contains(this.Screen, "See 'demo <command> --help' for what a command takes.");
+        }
+
+        [TestMethod]
+        public void Help_AfterTheCommandIsTheCommandsOwnHelp()
+        {
+            var cmd = Given("start", "--help")
+                .Command("start", "start it", c => c.Argument("file", "the file to start"))
+                .TryParse();
+
+            Assert.IsTrue(cmd.HelpRequested);
+            Assert.AreEqual(0, cmd.ExitCode);
+            Assert.AreEqual("demo start", cmd.ProgramName);
+            StringAssert.Contains(this.Screen, "demo start <file>");
+            StringAssert.Contains(this.Screen, "the file to start");
+        }
+
+        [TestMethod]
+        public void Help_BeforeTheCommandIsTheProgramsAndDoesNotBuildIt()
+        {
+            var built = false;
+            Given("--help", "start").Command("start", "start it", c => { built = true; }).TryParse();
+
+            StringAssert.Contains(this.Screen, "Commands:");
+            Assert.IsFalse(built, "listing the commands does not build any of them");
+        }
+
+        [TestMethod]
+        public void Help_WinsOverAnUnknownCommand()
+        {
+            var cmd = Given("--help", "strat").Command("start", "start it", c => { }).TryParse();
+
+            Assert.IsTrue(cmd.HelpRequested);
+            Assert.AreEqual(0, cmd.ExitCode);
+        }
+
+        [TestMethod]
+        public void Run_TheReturnValueBecomesTheExitCodeWithoutExitingTheProcess()
+        {
+            var cmd = Given("start").Command("start", "start it", c => c.Run(() => 3)).TryParse();
+
+            Assert.IsFalse(cmd.ShouldExit, "a command that ran is not a command line that could not be read");
+            Assert.IsTrue(cmd.HandlerRan);
+            Assert.AreEqual(3, cmd.ExitCode);
+        }
+
+        [TestMethod]
+        public void Run_AValueReturningMethodStillBindsToTheExitCodeOverload()
+        {
+            // Run(Action) and Run(Func<int>) both accept `() => Three()`. If the void one won,
+            // the code would be silently dropped -- so this pins which overload C# picks.
+            var cmd = Given("start").Command("start", "start it", c => c.Run(() => Three())).TryParse();
+
+            Assert.AreEqual(3, cmd.ExitCode);
+        }
+
+        private static int Three()
+        {
+            return 3;
+        }
+
+        [TestMethod]
+        public void Run_ACleanLineWithNoHandlerLeavesTheExitCodeAtZero()
+        {
+            var cmd = Given("start").Command("start", "start it", c => { }).TryParse();
+
+            Assert.IsFalse(cmd.ShouldExit);
+            Assert.IsFalse(cmd.HandlerRan);
+            Assert.AreEqual(0, cmd.ExitCode);
+        }
+
+        [TestMethod]
+        public void Run_TheHandlerDoesNotRunForABadCommandLine()
+        {
+            var ran = false;
+
+            var cmd = Given("start")
+                .Command("start", "start it", c =>
+                {
+                    c.Argument(out string file, "the file");
+                    c.Run(() => { ran = true; });
+                })
+                .TryParse();
+
+            Assert.IsTrue(cmd.ShouldExit);
+            Assert.IsFalse(ran);
+        }
+
+        [TestMethod]
+        public void Run_TheHandlerDoesNotRunForAValueThatWouldNotConvert()
+        {
+            var ran = false;
+
+            var cmd = Given("start", "abc")
+                .Command("start", "start it", c =>
+                {
+                    c.Argument(out int count, "how many to start");
+                    c.Run(() => { ran = true; });
+                })
+                .TryParse();
+
+            Assert.IsTrue(cmd.ShouldExit);
+            Assert.IsFalse(ran, "a Run closure can never see a value that failed to convert");
+            StringAssert.Contains(this.Errors, "demo start: <count> expects a whole number, but got 'abc'.");
+        }
+
+        [TestMethod]
+        public void Run_TheHandlerDoesNotRunForHelp()
+        {
+            var ran = false;
+            Given("start", "--help").Command("start", "start it", c => c.Run(() => { ran = true; })).TryParse();
+
+            Assert.IsFalse(ran);
+        }
+
+        [TestMethod]
+        public void Run_AnExceptionFromTheHandlerIsNotSwallowed()
+        {
+            Assert.Throws<InvalidTimeZoneException>(
+                () => Given("start")
+                    .Command("start", "start it", c => c.Run(() => { throw new InvalidTimeZoneException(); }))
+                    .TryParse());
+        }
+
+        [TestMethod]
+        public async Task RunAsync_IsAwaitedByTheAsyncParse()
+        {
+            var ran = false;
+
+            var cmd = await Given("start")
+                .Command("start", "start it", c => c.RunAsync(async () => { await Task.Yield(); ran = true; }))
+                .TryParseAsync();
+
+            Assert.IsTrue(ran);
+            Assert.IsFalse(cmd.ShouldExit);
+            Assert.IsTrue(cmd.HandlerRan);
+        }
+
+        [TestMethod]
+        public async Task RunAsync_ItsReturnValueBecomesTheExitCode()
+        {
+            var cmd = await Given("start")
+                .Command("start", "start it", c => c.RunAsync(async () => { await Task.Yield(); return 4; }))
+                .TryParseAsync();
+
+            Assert.AreEqual(4, cmd.ExitCode);
+        }
+
+        [TestMethod]
+        public async Task RunAsync_TheAsyncParseStillRunsAPlainHandler()
+        {
+            var cmd = await Given("start").Command("start", "start it", c => c.Run(() => 5)).TryParseAsync();
+
+            Assert.AreEqual(5, cmd.ExitCode);
+        }
+
+        [TestMethod]
+        public void RunAsync_UnderTheSyncParseThrowsAndSaysToUseParseAsync()
+        {
+            // Blocking on it would be the quiet answer; the loud one is what this type is for.
+            var thrown = Assert.Throws<InvalidOperationException>(
+                () => Given("start")
+                    .Command("start", "start it", c => c.RunAsync(async () => { await Task.Yield(); }))
+                    .TryParse());
+
+            StringAssert.Contains(thrown.Message, "ParseAsync()");
+            StringAssert.Contains(thrown.Message, "demo start");
+        }
+
+        [TestMethod]
+        public void Declaring_ACommandBesideAPositionalThrows()
+        {
+            Assert.Throws<InvalidOperationException>(
+                () => Given().Argument("file", "the file").Command("start", "start it", c => { }));
+
+            Assert.Throws<InvalidOperationException>(
+                () => Given().Command("start", "start it", c => { }).Argument("file", "the file"));
+        }
+
+        [TestMethod]
+        public void Declaring_ACommandAfterATypedDeclarationThrows()
+        {
+            // The mirror of the Rest() rule: the command word is where this level's switches
+            // stop, and the typed value was already read without knowing that.
+            var thrown = Assert.Throws<InvalidOperationException>(
+                () => Given().Switch(out bool verbose, "say more").Command("start", "start it", c => { }));
+
+            StringAssert.Contains(thrown.Message, "typed declaration");
+        }
+
+        [TestMethod]
+        public void Declaring_TwoCommandsWithOneNameThrows()
+        {
+            var thrown = Assert.Throws<InvalidOperationException>(
+                () => Given().Command("dry-run", "rehearse it", c => { }).Command("dryrun", "again", c => { }));
+
+            StringAssert.Contains(thrown.Message, "collides");
+        }
+
+        [TestMethod]
+        public void Declaring_ACommandAndASwitchWithOneNameThrows()
+        {
+            Assert.Throws<InvalidOperationException>(
+                () => Given().Command("start", "start it", c => { }).Switch("start", "something else"));
+
+            Assert.Throws<InvalidOperationException>(
+                () => Given().Switch("start", "something else").Command("start", "start it", c => { }));
+        }
+
+        [TestMethod]
+        public void Declaring_ACommandThatRedeclaresAGlobalThrows()
+        {
+            // Which --verbose you got would otherwise depend on which side of the command word
+            // it was typed.
+            var thrown = Assert.Throws<InvalidOperationException>(
+                () => Given("start")
+                    .Command("start", "start it", c => c.Switch("verbose", "say more here"))
+                    .Switch("verbose", "say more")
+                    .TryParse());
+
+            StringAssert.Contains(thrown.Message, "already declared by 'demo'");
+        }
+
+        [TestMethod]
+        public void Declaring_ACommandWithoutALambdaThrows()
+        {
+            Assert.Throws<ArgumentNullException>(() => Given().Command("start", "start it", null));
+        }
+
+        [TestMethod]
+        public void Declaring_ACommandHelpThatLooksLikeAnAliasThrows()
+        {
+            var thrown = Assert.Throws<ArgumentException>(() => Given().Command("remove", "rm", c => { }));
+            StringAssert.Contains(thrown.Message, "help text");
+        }
+
+        [TestMethod]
+        public void Declaring_RunAtTheTopLevelThrows()
+        {
+            var thrown = Assert.Throws<InvalidOperationException>(() => Given().Run(() => { }));
+            StringAssert.Contains(thrown.Message, "top level");
+        }
+
+        [TestMethod]
+        public void Declaring_RunBesideCommandsThrows()
+        {
+            Assert.Throws<InvalidOperationException>(
+                () => Given("nuget")
+                    .Command("nuget", "the feed", c =>
+                    {
+                        c.Command("push", "push one", p => { });
+                        c.Run(() => { });
+                    })
+                    .TryParse());
+
+            Capture();
+            Assert.Throws<InvalidOperationException>(
+                () => Given("nuget")
+                    .Command("nuget", "the feed", c =>
+                    {
+                        c.Run(() => { });
+                        c.Command("push", "push one", p => { });
+                    })
+                    .TryParse());
+        }
+
+        [TestMethod]
+        public void Declaring_TwoHandlersOnOneCommandThrows()
+        {
+            Assert.Throws<InvalidOperationException>(
+                () => Given("start")
+                    .Command("start", "start it", c =>
+                    {
+                        c.Run(() => { });
+                        c.Run(() => { });
+                    })
+                    .TryParse());
+        }
+
+        [TestMethod]
+        public void Declaring_ProgramInsideACommandThrows()
+        {
+            var thrown = Assert.Throws<InvalidOperationException>(
+                () => Given("start").Command("start", "start it", c => c.Program("other")).TryParse());
+
+            StringAssert.Contains(thrown.Message, "named by Command()");
         }
     }
 }

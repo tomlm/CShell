@@ -32,19 +32,22 @@ namespace CShellNet
         private readonly List<ArgSpec> arguments;
         private readonly bool whatIfDeclared;
 
-        private CliResult(string program, int exitCode, string error, bool helpRequested, string usage)
+        private CliResult(string program, int exitCode, string error, bool helpRequested, string usage,
+                          CliResult parent, string command)
         {
             this.ProgramName = program;
             this.ExitCode = exitCode;
             this.Error = error;
             this.HelpRequested = helpRequested;
             this.UsageText = usage;
+            this.Parent = parent;
+            this.Command = command;
             this.ShouldExit = true;
         }
 
         private CliResult(string program, string usage, HashSet<string> flags, Dictionary<string, string> values,
                           Dictionary<string, string> args, List<string> rest, List<SwitchSpec> switches,
-                          List<ArgSpec> arguments, bool whatIfDeclared)
+                          List<ArgSpec> arguments, bool whatIfDeclared, CliResult parent, string command)
         {
             this.ProgramName = program;
             this.UsageText = usage;
@@ -55,19 +58,29 @@ namespace CShellNet
             this.switches = switches;
             this.arguments = arguments;
             this.whatIfDeclared = whatIfDeclared;
+            this.Parent = parent;
+            this.Command = command;
         }
 
-        internal static CliResult Exiting(string program, int exitCode, string error, bool helpRequested, string usage)
+        internal static CliResult Exiting(string program, int exitCode, string error, bool helpRequested, string usage,
+                                          CliResult parent, string command)
         {
-            return new CliResult(program, exitCode, error, helpRequested, usage);
+            return new CliResult(program, exitCode, error, helpRequested, usage, parent, command);
         }
 
         internal static CliResult Parsed(string program, string usage, HashSet<string> flags,
                                          Dictionary<string, string> values, Dictionary<string, string> args,
                                          List<string> rest, List<SwitchSpec> switches, List<ArgSpec> arguments,
-                                         bool whatIfDeclared)
+                                         bool whatIfDeclared, CliResult parent, string command)
         {
-            return new CliResult(program, usage, flags, values, args, rest, switches, arguments, whatIfDeclared);
+            return new CliResult(program, usage, flags, values, args, rest, switches, arguments, whatIfDeclared,
+                                 parent, command);
+        }
+
+        internal void Ran(int exitCode)
+        {
+            this.HandlerRan = true;
+            this.ExitCode = exitCode;
         }
 
         /// <summary>The name shown in the usage line.</summary>
@@ -83,8 +96,67 @@ namespace CShellNet
         /// </remarks>
         public bool ShouldExit { get; private set; }
 
-        /// <summary>What to return: 0 for help, 1 for a command line that was not valid.</summary>
+        /// <summary>
+        /// What to return: 0 for help, 1 for a command line that was not valid, and whatever a
+        /// command's handler returned.
+        /// </summary>
+        /// <remarks>
+        /// ShouldExit tells the two apart, and it is the only thing that can. True means the line
+        /// was not read and this is a parse outcome. False with a non-zero code means the line was
+        /// read, the handler ran, and the handler said so -- see HandlerRan.
+        /// </remarks>
         public int ExitCode { get; private set; }
+
+        /// <summary>True when a command's Run() or RunAsync() handler was invoked.</summary>
+        public bool HandlerRan { get; private set; }
+
+        /// <summary>
+        /// The command that was typed at this level, or null when the script declared none.
+        /// </summary>
+        /// <remarks>
+        /// What a script switches on when it declared its commands with the (name, help) overloads
+        /// rather than giving each a Run():
+        ///
+        ///     if (cmd.Command == "start") { Start(cmd.Argument("file")); }
+        ///
+        /// It is the PRIMARY spelling, whichever alias was typed, so a switch on it does not have
+        /// to list them. Readable whatever happened to the command line -- it says which level the
+        /// error came from -- unlike the values, which are not.
+        /// </remarks>
+        public string Command { get; private set; }
+
+        /// <summary>
+        /// The level above this one, or null at the top.
+        /// </summary>
+        /// <remarks>
+        /// A command's result chains back to the program's, which is how a global declared at the
+        /// top stays readable from the command's result. Switch, Option and WhatIf already walk
+        /// it; this is for a script that wants to be explicit about which level it is asking.
+        /// </remarks>
+        public CliResult Parent { get; private set; }
+
+        /// <summary>Every command that was typed, outermost first: `nuget`, then `push`.</summary>
+        /// <remarks>
+        /// What to read instead of Command when the same verb appears under two parents and the
+        /// leaf name alone does not say which one ran. Empty when no command was typed.
+        /// </remarks>
+        public IReadOnlyList<string> CommandPath
+        {
+            get
+            {
+                var path = new List<string>();
+                for (var level = this; level != null; level = level.Parent)
+                {
+                    if (level.Command != null)
+                    {
+                        path.Add(level.Command);
+                    }
+                }
+
+                path.Reverse();
+                return path;
+            }
+        }
 
         /// <summary>What was wrong with the command line, or null when nothing was.</summary>
         public string Error { get; private set; }
@@ -125,8 +197,21 @@ namespace CShellNet
         public bool Switch(string name)
         {
             Readable();
-            var spec = Spec(name, false);
-            return this.flags.Contains(spec.Keys[0]);
+
+            // Up the chain, so a global declared by the program is readable from the command's
+            // result -- the script that declared it should not have to know which level it
+            // happens to be reading from.
+            var key = Cli.Normalize(name ?? "");
+            for (var level = this; level != null; level = level.Parent)
+            {
+                var found = level.Declared(key, false);
+                if (found != null)
+                {
+                    return level.flags.Contains(found.Keys[0]);
+                }
+            }
+
+            throw Undeclared("switch", name, false);
         }
 
         /// <summary>
@@ -143,10 +228,19 @@ namespace CShellNet
         public string Option(string name)
         {
             Readable();
-            var spec = Spec(name, true);
 
-            string value;
-            return this.values.TryGetValue(spec.Keys[0], out value) ? value : null;
+            var key = Cli.Normalize(name ?? "");
+            for (var level = this; level != null; level = level.Parent)
+            {
+                var found = level.Declared(key, true);
+                if (found != null)
+                {
+                    string value;
+                    return level.values.TryGetValue(found.Keys[0], out value) ? value : null;
+                }
+            }
+
+            throw Undeclared("option", name, true);
         }
 
         /// <summary>
@@ -164,13 +258,16 @@ namespace CShellNet
             {
                 Readable();
 
-                if (!this.whatIfDeclared)
+                for (var level = this; level != null; level = level.Parent)
                 {
-                    throw new InvalidOperationException(
-                        "WhatIf was never declared -- add .WhatIf() to the Cli chain, or this script has no dry run to report.");
+                    if (level.whatIfDeclared)
+                    {
+                        return level.flags.Contains("whatif");
+                    }
                 }
 
-                return this.flags.Contains("whatif");
+                throw new InvalidOperationException(
+                    "WhatIf was never declared -- add .WhatIf() to the Cli chain, or this script has no dry run to report.");
             }
         }
 
@@ -217,18 +314,27 @@ namespace CShellNet
             }
         }
 
-        SwitchSpec Spec(string name, bool wantValue)
+        SwitchSpec Declared(string key, bool wantValue)
         {
-            var key = Cli.Normalize(name ?? "");
-            var spec = this.switches.FirstOrDefault(s => s.Keys.Contains(key) && s.TakesValue == wantValue);
+            return this.switches == null
+                ? null
+                : this.switches.FirstOrDefault(s => s.Keys.Contains(key) && s.TakesValue == wantValue);
+        }
 
-            if (spec == null)
+        // Everything declared by this level and every level above it: the name may have been the
+        // program's rather than the command's, and either is a fair thing to have meant.
+        ArgumentException Undeclared(string what, string name, bool wantValue)
+        {
+            var known = new List<string>();
+            for (var level = this; level != null; level = level.Parent)
             {
-                throw Undeclared(wantValue ? "option" : "switch", name,
-                                 this.switches.Where(s => s.TakesValue == wantValue).Select(s => s.Primary));
+                if (level.switches != null)
+                {
+                    known.AddRange(level.switches.Where(s => s.TakesValue == wantValue).Select(s => s.Primary));
+                }
             }
 
-            return spec;
+            return Undeclared(what, name, known);
         }
 
         static ArgumentException Undeclared(string what, string name, IEnumerable<string> declared)
