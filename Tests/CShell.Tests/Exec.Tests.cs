@@ -24,10 +24,12 @@ namespace CShellLibTests
         private static string ShellFlag => IsWindows ? "/c" : "-c";
 
         private string tempFolder;
+        private string originalFolder;
 
         [TestInitialize]
         public void Init()
         {
+            this.originalFolder = Environment.CurrentDirectory;
             this.tempFolder = Path.Combine(Path.GetTempPath(), "cshell-exec-" + Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(this.tempFolder);
         }
@@ -35,6 +37,13 @@ namespace CShellLibTests
         [TestCleanup]
         public void Cleanup()
         {
+            // A CShell's CurrentFolder is the PROCESS's current directory, so a test that started
+            // one in the temp folder left the whole test run standing in it. Step out before
+            // deleting: on Linux the delete otherwise succeeds and every later `new CShell()`
+            // throws from getcwd() on a directory that is no longer there, and on Windows the
+            // delete fails instead and the folders pile up.
+            Environment.CurrentDirectory = this.originalFolder;
+
             try
             {
                 Directory.Delete(this.tempFolder, true);
