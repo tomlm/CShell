@@ -346,15 +346,16 @@ namespace CShellNet
                     Console.WriteLine(cmd);
                 }
 
-                List<string> args = new List<string>();
-                if (!Echo)
+                // cmd.exe doesn't split its command line the way other programs do: it runs everything after /C as
+                // typed. Passed as an argument, the command was escaped for argv parsing, so every " reached cmd.exe
+                // as \" and quoted arguments (and any |, & or > inside them) broke. Hand cmd.exe the command line
+                // as-is instead; /S strips just the outer pair of quotes and leaves the command's own alone.
+                var arguments = $"{(Echo ? string.Empty : "/Q ")}/S /C \"{cmd}\"";
+                return Command.Run("cmd.exe", Array.Empty<object>(), opt =>
                 {
-                    args.Add("/Q");
-                }
-                args.Add("/C");
-                args.Add(cmd);
-
-                return Command.Run("cmd.exe", args, SetCommandOptions);
+                    SetCommandOptions(opt);
+                    opt.StartInfo(info => info.Arguments = arguments);
+                });
             }
             else
             {
@@ -373,11 +374,9 @@ namespace CShellNet
             {
                 Console.WriteLine(cmd);
             }
-            var args = new List<string>();
-
-            var escapedArgs = cmd.Replace("\"", "\\\"");
-            args.Add("-c");
-            args.Add(escapedArgs);
+            // Command.Run escapes each argument, so the command goes as typed. (Escaping its quotes here as well left
+            // bash seeing \" -- a literal quote -- instead of quotes around an argument.)
+            var args = new List<string> { "-c", cmd };
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
                 return Command.Run("bash.exe", args, SetCommandOptions);

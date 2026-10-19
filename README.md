@@ -464,6 +464,10 @@ chmod +x example.csx
 ```
 
 ## CHANGELOG
+### v3.2.1
+* **Cmd()** on Windows passes the command to cmd.exe as typed. Every `"` used to arrive as `\"`, so quoted arguments, and any `|`, `&` or `>` inside them, broke (`Cmd("az webapp list --query \"[?name=='x'] | [0]\"")`)
+* **Bash()** no longer escapes the command's quotes a second time, so `Bash("printf '%s' \"a b\"")` passes `a b` as one argument
+
 ### v3.1.0
 * **Cli** now models nested commands, the way `dotnet build` and `dotnet nuget push` do
   * `.Command(name, help, c => ...)` gives a verb a command line of its own, and commands nest to any depth
