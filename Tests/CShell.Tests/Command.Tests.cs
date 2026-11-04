@@ -221,6 +221,30 @@ namespace CShellLibTests
         }
 
         [TestMethod]
+        public async Task Test_Cmd_QuotedArguments()
+        {
+            // Quotes, the spaces inside them and a | inside them all reach the program as typed. cmd.exe used to get
+            // every " as \", which also left the | outside any quotes.
+            CShell shell = new CShell();
+            shell.cd(testFolder);
+            var result = await shell.Cmd("echo x \"[?name=='S'].value | [0]\" y").AsString();
+
+            // cmd.exe's echo prints the quotes; bash's drops them.
+            Assert.AreEqual(IsWindows ? "x \"[?name=='S'].value | [0]\" y" : "x [?name=='S'].value | [0] y", result.Trim());
+        }
+
+        [TestMethod]
+        public async Task Test_Bash_QuotedArguments()
+        {
+            // "a b" is one argument. Bash used to get \"a b\": two arguments, with literal quotes.
+            CShell shell = new CShell();
+            shell.cd(testFolder);
+            var result = await shell.Bash("printf '%s\\n' \"a b\" c").AsString();
+
+            Assert.AreEqual("a b\nc", result.Trim().Replace("\r\n", "\n"));
+        }
+
+        [TestMethod]
         public async Task Test_Start()
         {
             CShell shell = new CShell();
