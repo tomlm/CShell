@@ -262,16 +262,18 @@ to make it even easier to work with the output of processes.
 | **Run(program, arg1, ..., argN)**    | run a program and CAPTURE its output, for reading and piping |
 | **Exec()/ExecAsync(program, arg1, ..., argN)** | run a program ATTACHED to this console, returning its exit code |
 | **Start(program, arg1, ..., argN)**    | run a DETACHED program directly with the given args (aka Process.Start(program, args)|
+| **Background(program, arg1, ..., argN)** | run a program in the BACKGROUND, sharing nothing with this one, returning its process id |
 | **Cmd(cmd)**  | run the cmd inside a cmd.exe, allow you to execute shell commands (like dir /b *.*                  |
 | **Bash(bash)**  | run the program in bash environment, allow you to execute bash shell commands (like ls -al *      |
 
-Three ways to run something, and the difference is where its input and output go:
+Four ways to run something, and the difference is where its input and output go:
 
 | | Output | Use it for |
 |---|---|---|
 | **Run()**  | captured | anything you want to read, pipe, or parse |
 | **Exec()** | your console | anything the user has to see and answer |
-| **Start()**| its own window | anything you are not waiting for |
+| **Start()**| its own window | apps you open and leave |
+| **Background()** | nowhere | servers and daemons that outlive the script |
 
 `Exec()` is what a shell does by default. In bash, `ssh host` or `vim` takes over the terminal and
 you opt into capture with `$(...)`; `Run()` is the other way round, so anything that needs the
@@ -296,6 +298,31 @@ stdin pipe nothing will write to.
 
 Terminal settings are restored afterwards, so a program killed before it can tidy up does not leave
 your console with echo switched off.
+
+`Background()` is `program &` with nohup: it returns at once with the process id, and the program
+carries on after the script has finished.
+
+```CSharp
+var pid = Background("dotnet", "MyServer.dll", "--port", "8080");
+
+Background(opt => opt.WorkingDirectory(site)
+                     .EnvironmentVariable("ASPNETCORE_ENVIRONMENT", "Development"),
+           "dotnet", "run");
+```
+
+It shares nothing with the script that started it:
+
+* **No window**, and no console you can see.
+* **None of the script's streams or handles.** A process holding a copy of the script's stdout keeps
+  whoever is reading it - `$(script)`, a pipe, a CI step, a test harness - waiting until it exits,
+  which for a server is never. Start() and Run() cannot promise this; Background() can. Its own
+  output goes nowhere, so have it write a log file if it has something to say.
+* **Cut loose from the terminal.** On Windows it is in its own process group, so Ctrl+C does not
+  reach it; on Linux it is in its own session, so neither Ctrl+C nor closing the terminal does.
+  macOS has no `setsid`, so there it runs under `nohup`: it survives the terminal closing, but not a
+  Ctrl+C sent while the script is still running.
+
+The id is the program's own, for `Process.GetProcessById()` when you want to watch or stop it.
 
 ```CSharp
 // Invoke multiple commands using fluent style

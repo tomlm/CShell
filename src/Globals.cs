@@ -156,6 +156,26 @@ namespace CShellNet
             => _shell.Start(options, executable, arguments);
 
         /// <summary>
+        /// Start a process in the background -- no window, none of this script's streams, cut
+        /// loose from the terminal -- and return its process id. See CShell.Background().
+        /// </summary>
+        /// <param name="executable">program to run</param>
+        /// <param name="arguments">arguments to pass to it</param>
+        /// <returns>the process id</returns>
+        public static int Background(string executable, params Object[] arguments)
+            => _shell.Background(executable, arguments);
+
+        /// <summary>
+        /// Start a process in the background and return its process id. See CShell.Background().
+        /// </summary>
+        /// <param name="options">options function</param>
+        /// <param name="executable">program to run</param>
+        /// <param name="arguments">arguments to pass to it</param>
+        /// <returns>the process id</returns>
+        public static int Background(Action<BackgroundOptions> options, string executable, params Object[] arguments)
+            => _shell.Background(options, executable, arguments);
+
+        /// <summary>
         /// Ask the user a question and return what they typed.
         /// </summary>
         /// <remarks>

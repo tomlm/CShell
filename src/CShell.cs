@@ -333,6 +333,62 @@ namespace CShellNet
         }
 
         /// <summary>
+        /// Start a process in the background and return its process id without waiting for it.
+        /// </summary>
+        /// <remarks>
+        /// For servers and daemons that should outlive the script, like `program &amp;` with nohup
+        /// in a shell:
+        ///
+        ///     var pid = Background("dotnet", "MyServer.dll", "--port", "8080");
+        ///
+        /// It gets no window, and none of this process's streams or handles. That last part is
+        /// what Start() and Run() cannot promise: anything holding a copy of the stdout this script
+        /// is writing to keeps whoever is reading it -- `$(script)`, a pipe, a CI step, a test
+        /// harness -- waiting for end-of-file until it exits, which for a server is never. Its own
+        /// output goes nowhere; have it write a log file if it has something to say.
+        ///
+        /// It is also cut loose from the terminal. On Windows it is in its own process group, so
+        /// Ctrl+C here does not reach it. On Linux it is in its own session, so neither Ctrl+C nor
+        /// closing the terminal does. macOS has no setsid command, so there it runs under nohup,
+        /// which keeps it alive when the terminal closes but not through a Ctrl+C sent while this
+        /// script is still running.
+        ///
+        /// The id is the program's own, so it can be passed to Process.GetProcessById() to watch
+        /// or stop it. A program that cannot be found throws, as it does for Run() and Exec().
+        /// </remarks>
+        /// <param name="executable">program to run</param>
+        /// <param name="arguments">arguments to pass to it</param>
+        /// <returns>the process id</returns>
+        public int Background(string executable, params Object[] arguments)
+        {
+            return Background((opt) => { }, executable, arguments);
+        }
+
+        /// <summary>
+        /// Start a process in the background and return its process id without waiting for it.
+        /// </summary>
+        /// <param name="options">options function</param>
+        /// <param name="executable">program to run</param>
+        /// <param name="arguments">arguments to pass to it</param>
+        /// <returns>the process id</returns>
+        public int Background(Action<BackgroundOptions> options, string executable, params Object[] arguments)
+        {
+            if (this.Echo)
+            {
+                Console.WriteLine($"{executable} {String.Join(" ", arguments)} &");
+            }
+
+            var backgroundOptions = new BackgroundOptions();
+            options?.Invoke(backgroundOptions);
+
+            return BackgroundProcess.Start(
+                executable,
+                arguments.Select(argument => argument?.ToString() ?? String.Empty),
+                backgroundOptions.workingDirectory ?? this.CurrentFolder.FullName,
+                backgroundOptions.environment);
+        }
+
+        /// <summary>
         /// Run a cmd/bash command
         /// </summary>
         /// <param name="cmd">shell cmd to run</param>
