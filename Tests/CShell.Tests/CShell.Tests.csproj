@@ -14,6 +14,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\CShell.csproj" />
+    <!-- Copied into the output so the Background() tests can run it as a process of its own. -->
+    <ProjectReference Include="..\BackgroundHost\BackgroundHost.csproj" />
   </ItemGroup>
 
 </Project>
